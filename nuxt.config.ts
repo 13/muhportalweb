@@ -25,5 +25,9 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
       ]
     }
+  },
+  server: {
+    host: process.env.NUXT_HOST || '0.0.0.0',
+    port: parseInt(process.env.NUXT_PORT) || 3000
   }
 })
