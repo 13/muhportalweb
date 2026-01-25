@@ -5,7 +5,7 @@
       <template #prepend>
         <v-icon>mdi-lock</v-icon>
       </template>
-      <v-list-item-title class="text-h6">Portal</v-list-item-title>
+      <v-list-item-title class="text-h5">Portal</v-list-item-title>
       <template #append>
         <v-btn icon variant="text" @click="refreshData">
           <v-icon>mdi-refresh</v-icon>
@@ -27,7 +27,7 @@
     <v-snackbar
       v-model="isNotificationVisible"
       :timeout="2500"
-      color="green-lighten-1"
+      color="green"
       location="top"
     >
       {{ notificationMessage }}
@@ -37,7 +37,7 @@
     <v-list>
       <!-- House Door (HD + HDL) - First -->
       <v-list-item v-if="portalStates.HD" disabled>
-        <v-list-item-title class="text-h6">Haustür</v-list-item-title>
+        <v-list-item-title class="text-h5">Haustür</v-list-item-title>
         <template #append>
           <v-chip label size="small">
             {{ formatRelativeDateTime(portalStates.HD?.time) }}
@@ -52,9 +52,9 @@
           <v-col cols="12" sm="6">
             <v-list-item @click="dialogVisibility.houseDoor = true">
               <template #prepend>
-                <v-icon :color="getStateIndicatorColor(portalStates.HD?.state)">mdi-checkbox-blank</v-icon>
+                <v-icon :color="getStateIndicatorColor(portalStates.HD?.state)" class="opacity-100">mdi-checkbox-blank</v-icon>
               </template>
-              <v-list-item-title class="text-h6">
+              <v-list-item-title class="text-h5">
                 {{ getDoorStateText(portalStates.HD?.state) }}
               </v-list-item-title>
             </v-list-item>
@@ -62,9 +62,9 @@
           <v-col v-if="portalStates.HDL">
             <v-list-item @click="dialogVisibility.houseDoor = true">
               <template #prepend>
-                <v-icon :color="getStateIndicatorColor(portalStates.HDL?.state)">mdi-checkbox-blank</v-icon>
+                <v-icon :color="getStateIndicatorColor(portalStates.HDL?.state)" class="opacity-100">mdi-checkbox-blank</v-icon>
               </template>
-              <v-list-item-title class="text-h6">
+              <v-list-item-title class="text-h5">
                 {{ getDoorLockStateText(portalStates.HDL?.state) }}
               </v-list-item-title>
             </v-list-item>
@@ -74,7 +74,7 @@
 
       <!-- Garage Door (GD + GDL) - Second -->
       <v-list-item v-if="portalStates.GD" disabled>
-        <v-list-item-title class="text-h6">Garagentür</v-list-item-title>
+        <v-list-item-title class="text-h5">Garagentür</v-list-item-title>
         <template #append>
           <v-chip label size="small">
             {{ formatRelativeDateTime(portalStates.GD?.time) }}
@@ -89,9 +89,9 @@
           <v-col cols="12" sm="6">
             <v-list-item @click="dialogVisibility.garageDoor = true">
               <template #prepend>
-                <v-icon :color="getStateIndicatorColor(portalStates.GD?.state)">mdi-checkbox-blank</v-icon>
+                <v-icon :color="getStateIndicatorColor(portalStates.GD?.state)" class="opacity-100">mdi-checkbox-blank</v-icon>
               </template>
-              <v-list-item-title class="text-h6">
+              <v-list-item-title class="text-h5">
                 {{ getDoorStateText(portalStates.GD?.state) }}
               </v-list-item-title>
             </v-list-item>
@@ -99,9 +99,9 @@
           <v-col v-if="portalStates.GDL">
             <v-list-item @click="dialogVisibility.garageDoor = true">
               <template #prepend>
-                <v-icon :color="getStateIndicatorColor(portalStates.GDL?.state)">mdi-checkbox-blank</v-icon>
+                <v-icon :color="getStateIndicatorColor(portalStates.GDL?.state)" class="opacity-100">mdi-checkbox-blank</v-icon>
               </template>
-              <v-list-item-title class="text-h6">
+              <v-list-item-title class="text-h5">
                 {{ getDoorLockStateText(portalStates.GDL?.state) }}
               </v-list-item-title>
             </v-list-item>
@@ -111,7 +111,7 @@
 
       <!-- Garage (G) - Third -->
       <v-list-item v-if="portalStates.G" disabled>
-        <v-list-item-title class="text-h6">Garage</v-list-item-title>
+        <v-list-item-title class="text-h5">Garage</v-list-item-title>
         <template #append>
           <v-chip label size="small">
             {{ formatRelativeDateTime(portalStates.G?.time) }}
@@ -123,9 +123,9 @@
           <v-col>
             <v-list-item @click="dialogVisibility.garage = true">
               <template #prepend>
-                <v-icon :color="getStateIndicatorColor(portalStates.G?.state)">mdi-checkbox-blank</v-icon>
+                <v-icon :color="getStateIndicatorColor(portalStates.G?.state)" class="opacity-100">mdi-checkbox-blank</v-icon>
               </template>
-              <v-list-item-title class="text-h6">
+              <v-list-item-title class="text-h5">
                 {{ getDoorStateText(portalStates.G?.state) }}
               </v-list-item-title>
             </v-list-item>

@@ -5,7 +5,7 @@
       <template #prepend>
         <v-icon>mdi-cog</v-icon>
       </template>
-      <v-list-item-title class="text-h6">Einstellungen</v-list-item-title>
+      <v-list-item-title class="text-h5">Einstellungen</v-list-item-title>
       <template #append>
         <v-btn icon variant="text" to="/">
           <v-icon>mdi-arrow-left</v-icon>

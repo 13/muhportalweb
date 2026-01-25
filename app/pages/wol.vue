@@ -5,7 +5,7 @@
       <template #prepend>
         <v-icon>mdi-lan</v-icon>
       </template>
-      <v-list-item-title class="text-h6">WOL</v-list-item-title>
+      <v-list-item-title class="text-h5">WOL</v-list-item-title>
       <template #append>
         <v-btn icon variant="text" @click="refreshData">
           <v-icon>mdi-refresh</v-icon>
@@ -27,7 +27,7 @@
     <v-snackbar
       v-model="isNotificationVisible"
       :timeout="2000"
-      color="green-lighten-1"
+      color="green"
       location="top"
     >
       {{ notificationMessage }}
