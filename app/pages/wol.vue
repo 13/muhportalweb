@@ -57,7 +57,7 @@
     <!-- Host Action Dialog -->
     <v-dialog v-model="isHostDialogVisible" max-width="480">
       <v-card>
-        <v-card-title class="text-h5 bg-surface-variant text-center">
+        <v-card-title class="text-h5 bg-ternary text-center">
           {{ extractHostname(selectedHost?.name || '') }}
         </v-card-title>
         <v-card-text>

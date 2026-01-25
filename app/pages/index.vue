@@ -137,7 +137,7 @@
     <!-- Garage Dialog -->
     <v-dialog v-model="dialogVisibility.garage" max-width="480">
       <v-card>
-        <v-card-title class="text-h5 bg-surface-variant text-center">
+        <v-card-title class="text-h5 bg-ternary text-center">
           Garage
         </v-card-title>
         <v-card-text>
@@ -173,7 +173,7 @@
     <!-- Garage Door Dialog -->
     <v-dialog v-model="dialogVisibility.garageDoor" max-width="480">
       <v-card>
-        <v-card-title class="text-h5 bg-surface-variant text-center">
+        <v-card-title class="text-h5 bg-ternary text-center">
           Garagentür
         </v-card-title>
         <v-card-text>
@@ -229,7 +229,7 @@
     <!-- House Door Dialog -->
     <v-dialog v-model="dialogVisibility.houseDoor" max-width="480">
       <v-card>
-        <v-card-title class="text-h5 bg-surface-variant text-center">
+        <v-card-title class="text-h5 bg-ternary text-center">
           Haustür
         </v-card-title>
         <v-card-text>
