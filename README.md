@@ -83,6 +83,24 @@ NUXT_HOST=0.0.0.0
 NUXT_PORT=3000
 ```
 
+### HTTPS with nginx-proxy (Self-Signed Certificate)
+
+When running behind an HTTPS reverse proxy (e.g., nginx-proxy with self-signed certificates), you **must** use secure WebSocket (`wss://`) to avoid mixed content errors:
+
+```bash
+# Use wss:// for HTTPS deployments
+MQTT_WS_URL=wss://mqtt.yourdomain.com:8884
+```
+
+**Note:** Your MQTT broker must be configured with TLS/SSL support on the WebSocket port. For Mosquitto, add to your config:
+
+```
+listener 8884
+protocol websockets
+certfile /path/to/cert.pem
+keyfile /path/to/key.pem
+```
+
 ## MQTT Topics
 
 ### Portal (Doors/Locks)
