@@ -137,7 +137,7 @@
     <!-- Garage Dialog -->
     <v-dialog v-model="dialogVisibility.garage" max-width="480">
       <v-card>
-        <v-card-title class="text-h5 bg-grey-lighten-2 text-center">
+        <v-card-title class="text-h5 bg-surface-variant text-center">
           Garage
         </v-card-title>
         <v-card-text>
@@ -160,7 +160,7 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block color="grey-darken-3" @click="dialogVisibility.garage = false">
+                <v-btn block color="secondary" @click="dialogVisibility.garage = false">
                   Abbrechen
                 </v-btn>
               </v-col>
@@ -173,7 +173,7 @@
     <!-- Garage Door Dialog -->
     <v-dialog v-model="dialogVisibility.garageDoor" max-width="480">
       <v-card>
-        <v-card-title class="text-h5 bg-grey-lighten-2 text-center">
+        <v-card-title class="text-h5 bg-surface-variant text-center">
           Garagentür
         </v-card-title>
         <v-card-text>
@@ -216,7 +216,7 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block color="grey-darken-3" @click="dialogVisibility.garageDoor = false">
+                <v-btn block color="secondary" @click="dialogVisibility.garageDoor = false">
                   Abbrechen
                 </v-btn>
               </v-col>
@@ -229,7 +229,7 @@
     <!-- House Door Dialog -->
     <v-dialog v-model="dialogVisibility.houseDoor" max-width="480">
       <v-card>
-        <v-card-title class="text-h5 bg-grey-lighten-2 text-center">
+        <v-card-title class="text-h5 bg-surface-variant text-center">
           Haustür
         </v-card-title>
         <v-card-text>
@@ -272,7 +272,7 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block color="grey-darken-3" @click="dialogVisibility.houseDoor = false">
+                <v-btn block color="secondary" @click="dialogVisibility.houseDoor = false">
                   Abbrechen
                 </v-btn>
               </v-col>
