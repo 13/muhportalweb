@@ -3,6 +3,7 @@ import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
+import colors from 'vuetify/util/colors'
 
 export default defineNuxtPlugin((nuxtApp) => {
   const vuetify = createVuetify({
@@ -14,9 +15,9 @@ export default defineNuxtPlugin((nuxtApp) => {
         light: {
           dark: false,
           colors: {
-            primary: '#1976D2',
-            secondary: '#546E7A',
-            accent: '#82B1FF',
+            primary: colors.blueGrey.darken4,
+            secondary: colors.blueGrey.lighten5,
+            /*accent: '#82B1FF',
             error: '#FF5252',
             info: '#2196F3',
             success: '#4CAF50',
@@ -25,15 +26,15 @@ export default defineNuxtPlugin((nuxtApp) => {
             surface: '#FFFFFF',
             'surface-variant': '#EEEEEE',
             'on-surface': '#212121',
-            'on-background': '#212121',
+            'on-background': '#212121',*/
           },
         },
         dark: {
           dark: true,
           colors: {
-            primary: '#64B5F6',
-            secondary: '#78909C',
-            accent: '#FF80AB',
+            primary: colors.blueGrey.lighten5,
+            secondary: colors.blueGrey.darken4,
+            /*accent: '#FF80AB',
             error: '#FF5252',
             info: '#64B5F6',
             success: '#69F0AE',
@@ -42,7 +43,7 @@ export default defineNuxtPlugin((nuxtApp) => {
             surface: '#1E1E1E',
             'surface-variant': '#2D2D2D',
             'on-surface': '#E0E0E0',
-            'on-background': '#E0E0E0',
+            'on-background': '#E0E0E0',*/
           },
         },
       },

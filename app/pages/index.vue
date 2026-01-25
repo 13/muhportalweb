@@ -152,7 +152,7 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block @click="sendPortalCommand('G', 'T')">
+                <v-btn block color="secondary" @click="sendPortalCommand('G', 'T')">
                   <v-icon start>mdi-arrow-up-down-bold</v-icon>
                   Bewegen
                 </v-btn>
@@ -160,7 +160,7 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block color="secondary" @click="dialogVisibility.garage = false">
+                <v-btn block color="primary" @click="dialogVisibility.garage = false">
                   Abbrechen
                 </v-btn>
               </v-col>
@@ -194,7 +194,7 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block @click="sendPortalCommand('GD', 'O')">
+                <v-btn block color="secondary" @click="sendPortalCommand('GD', 'O')">
                   <v-icon start>mdi-door-open</v-icon>
                   Öffnen
                 </v-btn>
@@ -202,13 +202,13 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block @click="sendPortalCommand('GD', 'U')">
+                <v-btn block color="secondary" @click="sendPortalCommand('GD', 'U')">
                   <v-icon start>mdi-lock-open-variant</v-icon>
                   Entriegeln
                 </v-btn>
               </v-col>
               <v-col>
-                <v-btn block @click="sendPortalCommand('GD', 'L')">
+                <v-btn block color="secondary" @click="sendPortalCommand('GD', 'L')">
                   <v-icon start>mdi-lock</v-icon>
                   Verriegeln
                 </v-btn>
@@ -216,7 +216,7 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block color="secondary" @click="dialogVisibility.garageDoor = false">
+                <v-btn block color="primary" @click="dialogVisibility.garageDoor = false">
                   Abbrechen
                 </v-btn>
               </v-col>
@@ -250,7 +250,7 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block @click="sendPortalCommand('HD', 'O')">
+                <v-btn block color="secondary" @click="sendPortalCommand('HD', 'O')">
                   <v-icon start>mdi-door-open</v-icon>
                   Öffnen
                 </v-btn>
@@ -258,13 +258,13 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block @click="sendPortalCommand('HD', 'U')">
+                <v-btn block color="secondary" @click="sendPortalCommand('HD', 'U')">
                   <v-icon start>mdi-lock-open-variant</v-icon>
                   Entriegeln
                 </v-btn>
               </v-col>
               <v-col>
-                <v-btn block @click="sendPortalCommand('HD', 'L')">
+                <v-btn block color="secondary" @click="sendPortalCommand('HD', 'L')">
                   <v-icon start>mdi-lock</v-icon>
                   Verriegeln
                 </v-btn>
@@ -272,7 +272,7 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block color="secondary" @click="dialogVisibility.houseDoor = false">
+                <v-btn block color="primary" @click="dialogVisibility.houseDoor = false">
                   Abbrechen
                 </v-btn>
               </v-col>

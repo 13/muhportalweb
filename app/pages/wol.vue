@@ -72,7 +72,7 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block @click="sendWakeOnLanCommand">
+                <v-btn block color="secondary" @click="sendWakeOnLanCommand">
                   <v-icon start>mdi-power</v-icon>
                   Wake
                 </v-btn>
@@ -80,15 +80,15 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block @click="sendShutdownCommand">
-                  <v-icon start>mdi-power-off</v-icon>
+                <v-btn block color="secondary" @click="sendShutdownCommand">
+                  <v-icon start>mdi-power</v-icon>
                   Shutdown
                 </v-btn>
               </v-col>
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block color="secondary" @click="isHostDialogVisible = false">
+                <v-btn block color="primary" @click="isHostDialogVisible = false">
                   Abbrechen
                 </v-btn>
               </v-col>
