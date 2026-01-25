@@ -1,0 +1,35 @@
+{
+  "name": "muhportalweb",
+  "version": "1.0.0",
+  "description": "MUH Portal Web - Home Automation Frontend",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/13/muhportalweb.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/13/muhportalweb/issues"
+  },
+  "homepage": "https://github.com/13/muhportalweb#readme",
+  "dependencies": {
+    "nuxt": "^4.3.0",
+    "vue": "^3.5.27",
+    "vue-router": "^4.6.4",
+    "vuetify": "^3.11.7",
+    "@mdi/font": "^7.4.47",
+    "mqtt": "^5.14.1"
+  },
+  "devDependencies": {
+    "vite-plugin-vuetify": "^2.1.3"
+  }
+}
