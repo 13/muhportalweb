@@ -3,7 +3,7 @@
     <v-main>
       <slot />
     </v-main>
-    <v-bottom-navigation app color="black" grow style="justify-content: center;">
+    <v-bottom-navigation app color="primary" grow style="justify-content: center;">
       <v-btn to="/" value="portal" style="flex: 1 1 auto; max-width: 168px;">
         <v-icon>mdi-lock</v-icon>
         <span>Portal</span>

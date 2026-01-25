@@ -57,7 +57,7 @@
     <!-- Host Action Dialog -->
     <v-dialog v-model="isHostDialogVisible" max-width="480">
       <v-card>
-        <v-card-title class="text-h5 bg-grey-lighten-2 text-center">
+        <v-card-title class="text-h5 bg-surface-variant text-center">
           {{ extractHostname(selectedHost?.name || '') }}
         </v-card-title>
         <v-card-text>
@@ -88,7 +88,7 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block color="grey-darken-3" @click="isHostDialogVisible = false">
+                <v-btn block color="secondary" @click="isHostDialogVisible = false">
                   Abbrechen
                 </v-btn>
               </v-col>
