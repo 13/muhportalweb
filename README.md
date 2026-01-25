@@ -1,4 +1,4 @@
-# muhportalweb
+# MuhPortalWeb
 
 **MUH Portal Web** - Home Automation Frontend
 
@@ -6,10 +6,19 @@ A modern home automation frontend built with Nuxt 4, Vue 3, Vuetify 3, and MQTT
 
 ## Contents
 
+ * [Screenshots](#screenshots)
  * [Features](#features)
  * [Installation](#installation)
  * [Configuration](#configuration)
  * [MQTT Topics](#mqtt-topics)
+
+## Screenshots
+
+<p align="center">
+  <img src="assets/screenshot1.png" width="200" />
+  <img src="assets/screenshot2.png" width="200" />
+  <img src="assets/screenshot3.png" width="200" />
+</p>
 
 ## Features
 
