@@ -3,6 +3,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-01-25',
   devtools: { enabled: true },
 
+
   // Client-only app (required for MQTT WebSocket usage)
   ssr: false,
 
@@ -17,4 +18,12 @@ export default defineNuxtConfig({
       mqttWsUrl: process.env.MQTT_WS_URL ?? 'ws://192.168.22.5:1884',
     },
   },
+  app: {
+    head: {
+      title: 'muhportalweb',
+      link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+      ]
+    }
+  }
 })
