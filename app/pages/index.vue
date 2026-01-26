@@ -361,12 +361,13 @@ onMounted(() => {
   connectToBroker()
 
   // Subscribe to portal state updates (G, GD, GDL, HD, HDL)
-  subscribeToTopic('muh/portal/+/json', (topic: string, message: Buffer) => {
+  subscribeToTopic('muh/portal/+/json', (topic: string, message: Buffer | string) => {
     const topicMatch = topic.match(/muh\/portal\/([A-Z]+)\/json/)
     if (topicMatch) {
       try {
         const portalCode = topicMatch[1] as keyof Portals
-        const stateData = JSON.parse(message.toString()) as PortalState
+        const messageStr = typeof message === 'string' ? message : message.toString()
+        const stateData = JSON.parse(messageStr) as PortalState
         portalStates[portalCode] = {
           state: stateData.state,
           time: stateData.time,

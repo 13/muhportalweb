@@ -166,9 +166,10 @@ onMounted(() => {
   connectToBroker()
 
   // Subscribe to host status updates
-  subscribeToTopic('muh/pc/#', (topic: string, message: Buffer) => {
+  subscribeToTopic('muh/pc/#', (topic: string, message: Buffer | string) => {
     try {
-      const hostData = JSON.parse(message.toString()) as NetworkHost
+      const messageStr = typeof message === 'string' ? message : message.toString()
+      const hostData = JSON.parse(messageStr) as NetworkHost
       // Update existing host or add new one
       if (hostData.name) {
         const existingHost = networkHosts.value.find((h) => h.name === hostData.name)
