@@ -1,6 +1,7 @@
 import { Server as SocketIOServer } from 'socket.io'
 import mqtt from 'mqtt'
 import type { MqttClient } from 'mqtt'
+import type { Server } from 'node:http'
 
 // Store subscriptions and handlers
 interface MqttSubscription {
@@ -11,6 +12,7 @@ interface MqttSubscription {
 const subscriptions = new Map<string, MqttSubscription>()
 let mqttClient: MqttClient | null = null
 let io: SocketIOServer | null = null
+let isInitializing = false
 
 // Helper function to check if topic matches wildcard pattern
 function topicMatchesPattern(pattern: string, topic: string): boolean {
@@ -18,7 +20,10 @@ function topicMatchesPattern(pattern: string, topic: string): boolean {
   return new RegExp(`^${wildcardPattern}$`).test(topic)
 }
 
-function setupSocketIO(server: any) {
+function setupSocketIO(server: Server) {
+  if (io || isInitializing) return // Prevent race conditions
+  isInitializing = true
+  
   const allowedOrigins = process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000']
   
   io = new SocketIOServer(server, {
@@ -97,6 +102,7 @@ function setupSocketIO(server: any) {
   })
 
   console.log('Socket.IO server initialized')
+  isInitializing = false
 }
 
 export default defineNitroPlugin((nitroApp) => {
