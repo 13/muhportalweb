@@ -77,6 +77,8 @@ Create a `.env` file based on `.env.example`:
 
 ```bash
 # MQTT Broker URL (backend connects to this using standard MQTT)
+# Use mqtt:// for TCP (port 1883) - recommended for best performance
+# Use ws:// for WebSocket (port 1884) - use if only HTTP ports are allowed
 MQTT_BROKER_URL=mqtt://192.168.22.5:1883
 
 # CORS Configuration for Socket.IO (comma-separated list of allowed origins)
