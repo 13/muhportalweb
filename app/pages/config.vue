@@ -1,5 +1,5 @@
 <template>
-  <v-card class="mx-auto">
+  <v-card class="mx-auto" max-width="600">
     <!-- Card Header -->
     <v-list-item>
       <template #prepend>
