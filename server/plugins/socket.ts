@@ -1,8 +1,6 @@
 import { Server as SocketIOServer } from 'socket.io'
 import mqtt from 'mqtt'
 import type { MqttClient } from 'mqtt'
-import type { NitroApp } from 'nitropack'
-import type { Server as HTTPServer } from 'node:http'
 
 // Store subscriptions and handlers
 interface MqttSubscription {
@@ -20,12 +18,90 @@ function topicMatchesPattern(pattern: string, topic: string): boolean {
   return new RegExp(`^${wildcardPattern}$`).test(topic)
 }
 
-export default defineNitroPlugin((nitroApp: NitroApp) => {
+function setupSocketIO(server: any) {
+  const allowedOrigins = process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000']
+  
+  io = new SocketIOServer(server, {
+    cors: {
+      origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, Postman, etc.)
+        if (!origin) return callback(null, true)
+        
+        // In development, allow any localhost origin
+        if (process.env.NODE_ENV !== 'production' && (origin?.includes('localhost') || origin?.includes('127.0.0.1'))) {
+          return callback(null, true)
+        }
+        
+        // Check against allowed origins
+        if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+          callback(null, true)
+        } else {
+          callback(new Error('Not allowed by CORS'))
+        }
+      },
+      methods: ['GET', 'POST'],
+      credentials: true,
+    },
+    path: '/socket.io/',
+  })
+
+  io.on('connection', (socket) => {
+    console.log('Socket.IO: Client connected:', socket.id)
+
+    socket.on('mqtt-subscribe', (data: { topic: string }) => {
+      const { topic } = data
+      console.log('Socket.IO: Client subscribing to:', topic)
+
+      // Add client to subscription
+      if (!subscriptions.has(topic)) {
+        subscriptions.set(topic, {
+          topic,
+          clients: new Set(),
+        })
+        // Subscribe to MQTT topic if this is the first client
+        mqttClient?.subscribe(topic, (err) => {
+          if (err) {
+            console.error('MQTT: Subscribe error:', err)
+            socket.emit('mqtt-error', { error: 'Failed to subscribe to topic' })
+          }
+        })
+      }
+      subscriptions.get(topic)?.clients.add(socket.id)
+    })
+
+    socket.on('mqtt-publish', (data: { topic: string; payload: string }) => {
+      const { topic, payload } = data
+      console.log('Socket.IO: Client publishing to:', topic, payload)
+      
+      if (mqttClient) {
+        mqttClient.publish(topic, payload)
+      } else {
+        socket.emit('mqtt-error', { error: 'MQTT client not connected' })
+      }
+    })
+
+    socket.on('disconnect', () => {
+      console.log('Socket.IO: Client disconnected:', socket.id)
+      
+      // Remove client from all subscriptions
+      subscriptions.forEach((sub, topic) => {
+        sub.clients.delete(socket.id)
+        
+        // Unsubscribe from MQTT if no more clients
+        if (sub.clients.size === 0) {
+          mqttClient?.unsubscribe(topic)
+          subscriptions.delete(topic)
+        }
+      })
+    })
+  })
+
+  console.log('Socket.IO server initialized')
+}
+
+export default defineNitroPlugin((nitroApp) => {
   // Get MQTT broker URL from environment
   const mqttBrokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://192.168.22.5:1883'
-  
-  // Get allowed CORS origins from environment (defaults to localhost for development)
-  const allowedOrigins = process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000']
   
   console.log('Setting up Socket.IO and MQTT bridge...')
   console.log('MQTT Broker URL:', mqttBrokerUrl)
@@ -76,10 +152,15 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
     })
   })
 
-  // Initialize Socket.IO server once using the close hook
-  // This ensures we have access to the HTTP server
+  // Try to initialize Socket.IO when server is ready
+  nitroApp.hooks.hookOnce('request', (event) => {
+    if (!io && event.node.res.socket?.server) {
+      setupSocketIO(event.node.res.socket.server)
+    }
+  })
+
+  // Cleanup on shutdown
   nitroApp.hooks.hook('close', () => {
-    // Cleanup on shutdown
     if (mqttClient) {
       mqttClient.end()
       mqttClient = null
@@ -88,92 +169,5 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
       io.close()
       io = null
     }
-  })
-
-  // Setup Socket.IO on the first request
-  nitroApp.hooks.hook('request', (event) => {
-    if (io) return // Already initialized
-    
-    const nodeRes = event.node.res
-    const nodeServer = nodeRes.socket?.server as HTTPServer | undefined
-    
-    if (!nodeServer) return
-    
-    io = new SocketIOServer(nodeServer, {
-      cors: {
-        origin: (origin, callback) => {
-          // Allow requests with no origin (mobile apps, Postman, etc.)
-          if (!origin) return callback(null, true)
-          
-          // In development, allow any localhost origin
-          if (process.env.NODE_ENV !== 'production' && origin.includes('localhost')) {
-            return callback(null, true)
-          }
-          
-          // Check against allowed origins
-          if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-            callback(null, true)
-          } else {
-            callback(new Error('Not allowed by CORS'))
-          }
-        },
-        methods: ['GET', 'POST'],
-        credentials: true,
-      },
-      path: '/socket.io/',
-    })
-
-    io.on('connection', (socket) => {
-      console.log('Socket.IO: Client connected:', socket.id)
-
-      socket.on('mqtt-subscribe', (data: { topic: string }) => {
-        const { topic } = data
-        console.log('Socket.IO: Client subscribing to:', topic)
-
-        // Add client to subscription
-        if (!subscriptions.has(topic)) {
-          subscriptions.set(topic, {
-            topic,
-            clients: new Set(),
-          })
-          // Subscribe to MQTT topic if this is the first client
-          mqttClient?.subscribe(topic, (err) => {
-            if (err) {
-              console.error('MQTT: Subscribe error:', err)
-              socket.emit('mqtt-error', { error: 'Failed to subscribe to topic' })
-            }
-          })
-        }
-        subscriptions.get(topic)?.clients.add(socket.id)
-      })
-
-      socket.on('mqtt-publish', (data: { topic: string; payload: string }) => {
-        const { topic, payload } = data
-        console.log('Socket.IO: Client publishing to:', topic, payload)
-        
-        if (mqttClient) {
-          mqttClient.publish(topic, payload)
-        } else {
-          socket.emit('mqtt-error', { error: 'MQTT client not connected' })
-        }
-      })
-
-      socket.on('disconnect', () => {
-        console.log('Socket.IO: Client disconnected:', socket.id)
-        
-        // Remove client from all subscriptions
-        subscriptions.forEach((sub, topic) => {
-          sub.clients.delete(socket.id)
-          
-          // Unsubscribe from MQTT if no more clients
-          if (sub.clients.size === 0) {
-            mqttClient?.unsubscribe(topic)
-            subscriptions.delete(topic)
-          }
-        })
-      })
-    })
-
-    console.log('Socket.IO server initialized')
   })
 })
