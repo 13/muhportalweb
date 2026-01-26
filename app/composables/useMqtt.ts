@@ -1,97 +1,167 @@
-import mqtt from 'mqtt'
-import type { MqttClient } from 'mqtt'
-
 // Store subscriptions for reconnection
 interface MqttSubscription {
   topic: string
-  messageHandler: (topic: string, message: Buffer) => void
+  messageHandler: (topic: string, message: Buffer | string) => void
 }
 
 export function useMqtt() {
-  const config = useRuntimeConfig()
-  const mqttClient = ref<MqttClient | null>(null)
+  const ws = ref<WebSocket | null>(null)
   const isConnected = ref(false)
   const activeSubscriptions = ref<MqttSubscription[]>([])
+  const reconnectTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+  const reconnectDelay = 5000 // 5 seconds
 
-  const initializeMqttEventHandlers = (client: MqttClient) => {
-    client.on('connect', () => {
+  const getWebSocketUrl = () => {
+    if (import.meta.server) return ''
+    
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const host = window.location.host
+    return `${protocol}//${host}/api/mqtt-ws`
+  }
+
+  const initializeWebSocketEventHandlers = (socket: WebSocket) => {
+    socket.onopen = () => {
       isConnected.value = true
-      console.log('MQTT: Connected to broker')
+      console.log('WebSocket: Connected to backend')
+      
+      // Clear any pending reconnect timer
+      if (reconnectTimer.value) {
+        clearTimeout(reconnectTimer.value)
+        reconnectTimer.value = null
+      }
+
       // Re-subscribe to all topics after reconnect
       activeSubscriptions.value.forEach((subscription) => {
-        client.subscribe(subscription.topic, (err) => {
-          if (err) console.error('MQTT: Subscribe error:', err)
-        })
+        socket.send(JSON.stringify({
+          type: 'subscribe',
+          topic: subscription.topic,
+        }))
       })
-    })
+    }
 
-    client.on('close', () => {
+    socket.onclose = () => {
       isConnected.value = false
-      console.log('MQTT: Disconnected from broker')
-    })
+      console.log('WebSocket: Disconnected from backend')
+      
+      // Attempt to reconnect after delay
+      if (!reconnectTimer.value) {
+        reconnectTimer.value = setTimeout(() => {
+          console.log('WebSocket: Attempting to reconnect...')
+          reconnectToBroker()
+        }, reconnectDelay)
+      }
+    }
 
-    client.on('error', (err) => {
-      console.error('MQTT: Connection error:', err)
-    })
+    socket.onerror = (error) => {
+      console.error('WebSocket: Connection error:', error)
+    }
 
-    client.on('message', (topic: string, message: Buffer) => {
-      activeSubscriptions.value.forEach((subscription) => {
-        // Check if the topic matches (supports wildcards)
-        const wildcardPattern = subscription.topic.replace(/\+/g, '[^/]+').replace(/#/g, '.*')
-        if (new RegExp(`^${wildcardPattern}$`).test(topic)) {
-          subscription.messageHandler(topic, message)
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+
+        switch (data.type) {
+          case 'connection':
+            console.log('WebSocket: Connection status:', data.status)
+            break
+
+          case 'message':
+            // Forward message to all matching subscriptions
+            activeSubscriptions.value.forEach((subscription) => {
+              const wildcardPattern = subscription.topic
+                .replace(/\+/g, '[^/]+')
+                .replace(/#/g, '.*')
+              
+              if (new RegExp(`^${wildcardPattern}$`).test(data.topic)) {
+                // Pass payload as string (compatible with Buffer.toString())
+                subscription.messageHandler(data.topic, data.payload)
+              }
+            })
+            break
+
+          case 'pong':
+            // Keep-alive response
+            break
+
+          default:
+            console.warn('WebSocket: Unknown message type:', data.type)
         }
-      })
-    })
+      } catch (error) {
+        console.error('WebSocket: Error processing message:', error)
+      }
+    }
   }
 
   const connectToBroker = () => {
-    if (import.meta.client && !mqttClient.value) {
-      mqttClient.value = mqtt.connect(config.public.mqttWsUrl as string)
-      initializeMqttEventHandlers(mqttClient.value)
+    if (import.meta.client && !ws.value) {
+      const wsUrl = getWebSocketUrl()
+      console.log('WebSocket: Connecting to', wsUrl)
+      ws.value = new WebSocket(wsUrl)
+      initializeWebSocketEventHandlers(ws.value)
     }
-    return mqttClient.value
+    return ws.value
   }
 
   const reconnectToBroker = () => {
     if (import.meta.client) {
-      // Disconnect existing client
-      if (mqttClient.value) {
-        mqttClient.value.end(true)
-        mqttClient.value = null
+      // Clear any pending reconnect timer
+      if (reconnectTimer.value) {
+        clearTimeout(reconnectTimer.value)
+        reconnectTimer.value = null
       }
+
+      // Disconnect existing connection
+      if (ws.value) {
+        ws.value.close()
+        ws.value = null
+      }
+
       // Create new connection
-      mqttClient.value = mqtt.connect(config.public.mqttWsUrl as string)
-      initializeMqttEventHandlers(mqttClient.value)
+      const wsUrl = getWebSocketUrl()
+      console.log('WebSocket: Reconnecting to', wsUrl)
+      ws.value = new WebSocket(wsUrl)
+      initializeWebSocketEventHandlers(ws.value)
     }
   }
 
-  const subscribeToTopic = (topic: string, messageHandler: (topic: string, message: Buffer) => void) => {
+  const subscribeToTopic = (topic: string, messageHandler: (topic: string, message: Buffer | string) => void) => {
     // Store subscription for reconnection
     const existingSubscription = activeSubscriptions.value.find((sub) => sub.topic === topic)
     if (!existingSubscription) {
       activeSubscriptions.value.push({ topic, messageHandler })
     }
 
-    if (mqttClient.value) {
-      mqttClient.value.subscribe(topic, (err) => {
-        if (err) {
-          console.error('MQTT: Subscribe error:', err)
-        }
-      })
+    // Send subscribe message to backend
+    if (ws.value && ws.value.readyState === WebSocket.OPEN) {
+      ws.value.send(JSON.stringify({
+        type: 'subscribe',
+        topic,
+      }))
     }
   }
 
   const publishMessage = (topic: string, payload: string) => {
-    if (mqttClient.value) {
-      mqttClient.value.publish(topic, payload)
+    if (ws.value && ws.value.readyState === WebSocket.OPEN) {
+      ws.value.send(JSON.stringify({
+        type: 'publish',
+        topic,
+        payload,
+      }))
+    } else {
+      console.warn('WebSocket: Cannot publish - not connected')
     }
   }
 
   const disconnectFromBroker = () => {
-    if (mqttClient.value) {
-      mqttClient.value.end()
-      mqttClient.value = null
+    // Clear reconnect timer
+    if (reconnectTimer.value) {
+      clearTimeout(reconnectTimer.value)
+      reconnectTimer.value = null
+    }
+
+    if (ws.value) {
+      ws.value.close()
+      ws.value = null
       isConnected.value = false
       activeSubscriptions.value = []
     }
@@ -102,7 +172,6 @@ export function useMqtt() {
   })
 
   return {
-    mqttClient,
     isConnected,
     connectToBroker,
     reconnectToBroker,
