@@ -2,6 +2,7 @@ import { Server as SocketIOServer } from 'socket.io'
 import mqtt from 'mqtt'
 import type { MqttClient } from 'mqtt'
 import type { NitroApp } from 'nitropack'
+import type { Server as HTTPServer } from 'node:http'
 
 // Store subscriptions and handlers
 interface MqttSubscription {
@@ -12,8 +13,13 @@ interface MqttSubscription {
 const subscriptions = new Map<string, MqttSubscription>()
 let mqttClient: MqttClient | null = null
 let io: SocketIOServer | null = null
+let isInitialized = false
 
 export default defineNitroPlugin((nitroApp: NitroApp) => {
+  // Skip in dev mode during initial build
+  if (isInitialized) return
+  isInitialized = true
+
   // Get MQTT broker URL from environment
   const mqttBrokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://192.168.22.5:1883'
   
@@ -70,14 +76,18 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
     })
   })
 
-  // Setup Socket.IO on Nuxt's server
+  // Setup Socket.IO on the first request
   nitroApp.hooks.hook('request', (event) => {
-    if (!io && event.node.res.socket?.server) {
-      io = new SocketIOServer(event.node.res.socket.server, {
+    // @ts-ignore - accessing the underlying Node.js server
+    const nodeServer = event.node.res.socket?.server as HTTPServer | undefined
+    
+    if (!io && nodeServer) {
+      io = new SocketIOServer(nodeServer, {
         cors: {
           origin: '*',
           methods: ['GET', 'POST'],
         },
+        path: '/socket.io/',
       })
 
       io.on('connection', (socket) => {
