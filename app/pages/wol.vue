@@ -1,40 +1,41 @@
 <template>
-  <v-card class="mx-auto">
-    <!-- Card Header -->
-    <v-list-item>
-      <template #prepend>
-        <v-icon>mdi-lan</v-icon>
-      </template>
-      <v-list-item-title class="text-h5">WOL</v-list-item-title>
-      <template #append>
-        <v-btn icon variant="text" @click="refreshData">
-          <v-icon>mdi-refresh</v-icon>
-        </v-btn>
-        <v-btn icon variant="text" to="/config">
-          <v-icon>mdi-cog</v-icon>
-        </v-btn>
-      </template>
-    </v-list-item>
+  <v-card height="100%">
+    <div class="mx-auto" style="max-width: 600px;">
+      <!-- Card Header -->
+      <v-list-item>
+        <template #prepend>
+          <v-icon>mdi-lan</v-icon>
+        </template>
+        <v-list-item-title class="text-h5">WOL</v-list-item-title>
+        <template #append>
+          <v-btn icon variant="text" @click="refreshData">
+            <v-icon>mdi-refresh</v-icon>
+          </v-btn>
+          <v-btn icon variant="text" to="/config">
+            <v-icon>mdi-cog</v-icon>
+          </v-btn>
+        </template>
+      </v-list-item>
 
-    <!-- MQTT Connection Status -->
-    <v-progress-linear
-      class="mb-0"
-      :model-value="100"
-      :color="mqttConnectionStatusColor"
-    />
+      <!-- MQTT Connection Status -->
+      <v-progress-linear
+        class="mb-0"
+        :model-value="100"
+        :color="mqttConnectionStatusColor"
+      />
 
-    <!-- Notification Snackbar -->
-    <v-snackbar
-      v-model="isNotificationVisible"
-      :timeout="2000"
-      color="green"
-      location="top"
-    >
-      {{ notificationMessage }}
-    </v-snackbar>
+      <!-- Notification Snackbar -->
+      <v-snackbar
+        v-model="isNotificationVisible"
+        :timeout="2000"
+        color="green"
+        location="top"
+      >
+        {{ notificationMessage }}
+      </v-snackbar>
 
-    <!-- Hosts List -->
-    <v-list>
+      <!-- Hosts List -->
+      <v-list>
       <v-list-item
         v-for="(host, index) in hostsSortedByPriority"
         :key="index"
@@ -97,6 +98,7 @@
         </v-card-text>
       </v-card>
     </v-dialog>
+    </div>
   </v-card>
 </template>
 
