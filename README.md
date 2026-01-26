@@ -32,13 +32,14 @@ A modern home automation frontend built with Nuxt 4, Vue 3, Vuetify 3, and MQTT
  * Nuxt 4
  * Vue 3
  * Vuetify 3
- * MQTT (direct browser WebSocket connection)
+ * Socket.IO (frontend to backend communication)
+ * MQTT (backend to MQTT broker communication)
 
 ## Installation
 
 ### Prerequisites
 
-Install Node.js 20+ and an MQTT broker with WebSocket support enabled (e.g., Mosquitto with WebSocket listener).
+Install Node.js 20+ and an MQTT broker (e.g., Mosquitto). The MQTT broker no longer needs WebSocket support enabled, as the backend connects using the standard MQTT protocol.
 
 ### Development
 
@@ -75,8 +76,8 @@ docker compose up
 Create a `.env` file based on `.env.example`:
 
 ```bash
-# MQTT WebSocket URL (browser connects directly to this)
-MQTT_WS_URL=ws://192.168.22.5:1884
+# MQTT Broker URL (backend connects to this using standard MQTT)
+MQTT_BROKER_URL=mqtt://192.168.22.5:1883
 
 # Nuxt server configuration
 NUXT_HOST=0.0.0.0
