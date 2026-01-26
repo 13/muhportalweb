@@ -148,7 +148,6 @@ const sendWakeOnLanCommand = () => {
     publishMessage('muh/wol', JSON.stringify({ mac: selectedHost.value.mac }))
     notificationMessage.value = `Waking ${extractHostname(selectedHost.value.name)} ...`
     isNotificationVisible.value = true
-    isHostDialogVisible.value = false
   }
 }
 
@@ -158,7 +157,6 @@ const sendShutdownCommand = () => {
     publishMessage('muh/poweroff', JSON.stringify({ mac: selectedHost.value.mac }))
     notificationMessage.value = `Shutting down ${extractHostname(selectedHost.value.name)} ...`
     isNotificationVisible.value = true
-    isHostDialogVisible.value = false
   }
 }
 
