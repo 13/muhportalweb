@@ -55,7 +55,7 @@ function setupSocketIO(server: Server) {
 
     socket.on('mqtt-subscribe', (data: { topic: string }) => {
       const { topic } = data
-      console.log('Socket.IO: Client subscribing to:', topic)
+      console.log('Socket.IO: Client', socket.id, 'subscribing to:', topic)
 
       // Add client to subscription
       if (!subscriptions.has(topic)) {
@@ -64,14 +64,20 @@ function setupSocketIO(server: Server) {
           clients: new Set(),
         })
         // Subscribe to MQTT topic if this is the first client
+        console.log('Socket.IO: First subscription to', topic, '- subscribing to MQTT broker')
         mqttClient?.subscribe(topic, (err) => {
           if (err) {
-            console.error('MQTT: Subscribe error:', err)
+            console.error('MQTT: Subscribe error for topic', topic, ':', err)
             socket.emit('mqtt-error', { error: 'Failed to subscribe to topic' })
+          } else {
+            console.log('MQTT: Successfully subscribed to topic:', topic)
           }
         })
+      } else {
+        console.log('Socket.IO: Adding client to existing subscription for:', topic)
       }
       subscriptions.get(topic)?.clients.add(socket.id)
+      console.log('Socket.IO: Total clients subscribed to', topic, ':', subscriptions.get(topic)?.clients.size)
     })
 
     socket.on('mqtt-publish', (data: { topic: string; payload: string }) => {
@@ -128,9 +134,12 @@ export default defineNitroPlugin((nitroApp) => {
   })
 
   mqttClient.on('message', (topic: string, message: Buffer) => {
+    console.log('MQTT: Received message on topic:', topic, 'Content:', message.toString())
+    
     // Forward MQTT messages to all subscribed Socket.IO clients
     const subscription = subscriptions.get(topic)
     if (subscription && io) {
+      console.log('MQTT: Forwarding to', subscription.clients.size, 'client(s) subscribed to exact topic:', topic)
       subscription.clients.forEach((socketId) => {
         const socket = io.sockets.sockets.get(socketId)
         if (socket) {
@@ -145,6 +154,7 @@ export default defineNitroPlugin((nitroApp) => {
     // Also check for wildcard subscriptions
     subscriptions.forEach((sub, subTopic) => {
       if (subTopic !== topic && topicMatchesPattern(subTopic, topic)) {
+        console.log('MQTT: Forwarding to', sub.clients.size, 'client(s) via wildcard subscription:', subTopic)
         sub.clients.forEach((socketId) => {
           const socket = io?.sockets.sockets.get(socketId)
           if (socket) {

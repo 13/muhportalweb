@@ -48,12 +48,14 @@ export function useSocketIO() {
     })
 
     socketInstance.on('mqtt-message', (data: { topic: string; message: string }) => {
+      console.log('Socket.IO: Received MQTT message:', data.topic, data.message)
       // Convert message string to Buffer-like object for compatibility with existing code
       const messageBuffer = createBufferLike(data.message)
       
       activeSubscriptions.value.forEach((subscription) => {
         // Check if the topic matches (supports wildcards)
         if (topicMatchesPattern(subscription.topic, data.topic)) {
+          console.log('Socket.IO: Forwarding message to handler for topic:', subscription.topic)
           subscription.messageHandler(data.topic, messageBuffer)
         }
       })
@@ -95,10 +97,14 @@ export function useSocketIO() {
     const existingSubscription = activeSubscriptions.value.find((sub) => sub.topic === topic)
     if (!existingSubscription) {
       activeSubscriptions.value.push({ topic, messageHandler })
+      console.log('Socket.IO: Added subscription for topic:', topic)
     }
 
     if (socket.value?.connected) {
+      console.log('Socket.IO: Socket connected, sending subscription for:', topic)
       socket.value.emit('mqtt-subscribe', { topic })
+    } else {
+      console.log('Socket.IO: Socket not connected yet, subscription will be sent on connect for:', topic)
     }
   }
 
