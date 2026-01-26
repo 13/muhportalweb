@@ -3,7 +3,21 @@ import { io, Socket } from 'socket.io-client'
 // Store subscriptions for reconnection
 interface SocketSubscription {
   topic: string
-  messageHandler: (topic: string, message: Buffer) => void
+  messageHandler: (topic: string, message: BufferLike) => void
+}
+
+// Browser-compatible Buffer-like object
+interface BufferLike {
+  toString(): string
+}
+
+// Helper function to create a Buffer-like object from a string
+function createBufferLike(str: string): BufferLike {
+  return {
+    toString() {
+      return str
+    }
+  }
 }
 
 // Helper function to check if topic matches wildcard pattern
@@ -34,8 +48,8 @@ export function useSocketIO() {
     })
 
     socketInstance.on('mqtt-message', (data: { topic: string; message: string }) => {
-      // Convert message string to Buffer for compatibility with existing code
-      const messageBuffer = Buffer.from(data.message)
+      // Convert message string to Buffer-like object for compatibility with existing code
+      const messageBuffer = createBufferLike(data.message)
       
       activeSubscriptions.value.forEach((subscription) => {
         // Check if the topic matches (supports wildcards)
@@ -76,7 +90,7 @@ export function useSocketIO() {
     }
   }
 
-  const subscribeToTopic = (topic: string, messageHandler: (topic: string, message: Buffer) => void) => {
+  const subscribeToTopic = (topic: string, messageHandler: (topic: string, message: BufferLike) => void) => {
     // Store subscription for reconnection
     const existingSubscription = activeSubscriptions.value.find((sub) => sub.topic === topic)
     if (!existingSubscription) {
