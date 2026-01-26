@@ -10,6 +10,8 @@ interface MqttSubscription {
 }
 
 const subscriptions = new Map<string, MqttSubscription>()
+// Cache for storing the last message received on each topic
+const messageCache = new Map<string, string>()
 let mqttClient: MqttClient | null = null
 let io: SocketIOServer | null = null
 let isInitializing = false
@@ -80,6 +82,18 @@ function setupSocketIO(server: Server) {
       }
       subscriptions.get(topic)?.clients.add(socket.id)
       console.log('Socket.IO: Total clients subscribed to', topic, ':', subscriptions.get(topic)?.clients.size)
+
+      // Send cached messages to the new subscriber
+      // Check both exact topic matches and wildcard pattern matches
+      messageCache.forEach((cachedMessage, cachedTopic) => {
+        if (cachedTopic === topic || topicMatchesPattern(topic, cachedTopic)) {
+          console.log('Socket.IO: Sending cached message to new subscriber for topic:', cachedTopic)
+          socket.emit('mqtt-message', {
+            topic: cachedTopic,
+            message: cachedMessage,
+          })
+        }
+      })
     })
 
     socket.on('mqtt-publish', (data: { topic: string; payload: string }) => {
@@ -137,6 +151,9 @@ export default defineNitroPlugin((nitroApp) => {
 
   mqttClient.on('message', (topic: string, message: Buffer) => {
     console.log('MQTT: Received message on topic:', topic, 'Content:', message.toString())
+    
+    // Cache the last message for this topic
+    messageCache.set(topic, message.toString())
     
     // Forward MQTT messages to all subscribed Socket.IO clients
     const subscription = subscriptions.get(topic)
