@@ -29,12 +29,43 @@
           />
         </template>
       </v-list-item>
+
+      <v-list-item>
+        <template #prepend>
+          <v-icon>mdi-database-remove</v-icon>
+        </template>
+        <v-list-item-title>MQTT Cache</v-list-item-title>
+        <template #append>
+          <v-btn
+            color="error"
+            variant="outlined"
+            size="small"
+            @click="onClearMqttCache"
+          >
+            Löschen
+          </v-btn>
+        </template>
+      </v-list-item>
     </v-list>
+
+    <!-- Notification Snackbar -->
+    <v-snackbar
+      v-model="isNotificationVisible"
+      :timeout="2000"
+      color="green"
+      location="top"
+    >
+      {{ notificationMessage }}
+    </v-snackbar>
   </v-card>
 </template>
 
 <script setup lang="ts">
+const { clearAll } = useMqttStore()
+
 const isDarkModeEnabled = ref(false)
+const isNotificationVisible = ref(false)
+const notificationMessage = ref('')
 const setDarkMode = inject<(enableDarkMode: boolean) => void>('setDarkMode')
 
 onMounted(() => {
@@ -46,5 +77,11 @@ const onDarkModeToggle = () => {
   if (setDarkMode) {
     setDarkMode(isDarkModeEnabled.value)
   }
+}
+
+const onClearMqttCache = () => {
+  clearAll()
+  notificationMessage.value = 'MQTT Cache gelöscht'
+  isNotificationVisible.value = true
 }
 </script>
