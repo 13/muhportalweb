@@ -67,14 +67,13 @@ export function useMqtt() {
 
         socket.value.on('message', (data: { topic: string, message: string }) => {
           try {
-            const topic = data.topic
             const message = Buffer.from(data.message)
             
             // Dispatch to all matching subscriptions
             activeSubscriptions.value.forEach((subscription) => {
               const wildcardPattern = subscription.topic.replace(/\+/g, '[^/]+').replace(/#/g, '.*')
-              if (new RegExp(`^${wildcardPattern}$`).test(topic)) {
-                subscription.messageHandler(topic, message)
+              if (new RegExp(`^${wildcardPattern}$`).test(data.topic)) {
+                subscription.messageHandler(data.topic, message)
               }
             })
           } catch (err) {
