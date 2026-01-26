@@ -32,7 +32,7 @@ A modern home automation frontend built with Nuxt 4, Vue 3, Vuetify 3, and MQTT
  * Nuxt 4
  * Vue 3
  * Vuetify 3
- * MQTT (backend bridge with WebSocket to frontend)
+ * MQTT (backend bridge with Socket.IO to frontend)
 
 ## Installation
 
@@ -40,7 +40,7 @@ A modern home automation frontend built with Nuxt 4, Vue 3, Vuetify 3, and MQTT
 
 Install Node.js 20+ and an MQTT broker (e.g., Mosquitto).
 
-**Note:** The frontend now connects to the backend via WebSocket, and the backend handles all MQTT communication. You no longer need WebSocket support on your MQTT broker.
+**Note:** The frontend now connects to the backend via Socket.IO, and the backend handles all MQTT communication. You no longer need WebSocket support on your MQTT broker.
 
 ### Development
 
@@ -80,8 +80,8 @@ Create a `.env` file based on `.env.example`:
 # MQTT Broker URL (backend connects to this)
 MQTT_URL=mqtt://192.168.22.5:1883
 
-# WebSocket URL (optional - defaults to current host)
-# WS_URL=ws://localhost:3000/ws
+# Socket.IO URL (optional - defaults to current host)
+# WS_URL=http://localhost:3000
 
 # Nuxt server configuration
 NUXT_HOST=0.0.0.0
@@ -92,7 +92,7 @@ NUXT_PORT=3000
 
 The application uses a backend MQTT bridge:
 - **Backend** (Nuxt server) connects to the MQTT broker
-- **Frontend** connects to backend via WebSocket at `/ws`
+- **Frontend** connects to backend via Socket.IO
 - Backend forwards MQTT messages to connected clients
 - All MQTT logic runs on the server, not in the browser
 

@@ -1,16 +1,16 @@
 import mqtt from 'mqtt'
 import type { MqttClient } from 'mqtt'
-import { WebSocket } from 'ws'
+import type { Socket } from 'socket.io'
 
 interface MqttSubscription {
   topic: string
-  clients: Set<WebSocket>
+  clients: Set<Socket>
 }
 
 class MqttManager {
   private client: MqttClient | null = null
   private subscriptions: Map<string, MqttSubscription> = new Map()
-  private connectedClients: Set<WebSocket> = new Set()
+  private connectedClients: Set<Socket> = new Set()
   private mqttUrl: string = ''
 
   initialize(mqttUrl: string) {
@@ -54,16 +54,16 @@ class MqttManager {
     })
   }
 
-  addClient(ws: WebSocket) {
-    this.connectedClients.add(ws)
+  addClient(socket: Socket) {
+    this.connectedClients.add(socket)
     console.log('[MQTT Manager] Client connected. Total clients:', this.connectedClients.size)
   }
 
-  removeClient(ws: WebSocket) {
-    this.connectedClients.delete(ws)
+  removeClient(socket: Socket) {
+    this.connectedClients.delete(socket)
     // Remove client from all subscriptions
     this.subscriptions.forEach((sub, topic) => {
-      sub.clients.delete(ws)
+      sub.clients.delete(socket)
       // Clean up empty subscriptions
       if (sub.clients.size === 0) {
         this.subscriptions.delete(topic)
@@ -81,7 +81,7 @@ class MqttManager {
     console.log('[MQTT Manager] Client disconnected. Total clients:', this.connectedClients.size)
   }
 
-  subscribe(topic: string, ws: WebSocket) {
+  subscribe(topic: string, socket: Socket) {
     let subscription = this.subscriptions.get(topic)
 
     if (!subscription) {
@@ -103,7 +103,7 @@ class MqttManager {
       }
     }
 
-    subscription.clients.add(ws)
+    subscription.clients.add(socket)
     console.log('[MQTT Manager] Client subscribed to:', topic)
   }
 
@@ -121,15 +121,14 @@ class MqttManager {
     this.subscriptions.forEach((subscription, subscribedTopic) => {
       if (this.topicMatches(topic, subscribedTopic)) {
         const messageData = {
-          type: 'message',
           topic,
           message: message.toString(),
         }
 
-        subscription.clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
+        subscription.clients.forEach((socket) => {
+          if (socket.connected) {
             try {
-              client.send(JSON.stringify(messageData))
+              socket.emit('message', messageData)
             } catch (err) {
               console.error('[MQTT Manager] Error sending to client:', err)
             }

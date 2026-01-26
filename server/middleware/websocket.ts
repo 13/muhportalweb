@@ -1,89 +1,61 @@
-import { WebSocketServer, WebSocket } from 'ws'
+import { Server as SocketIOServer } from 'socket.io'
 import { mqttManager } from '../utils/mqttManager'
 import type { Server } from 'http'
 
-// Extend Server type to include WebSocket server
-interface ServerWithWebSocket extends Server {
-  wss?: WebSocketServer
+// Extend Server type to include Socket.IO server
+interface ServerWithSocketIO extends Server {
+  io?: SocketIOServer
 }
 
 export default defineEventHandler((event) => {
-  // Skip for non-upgrade requests
-  if (!event.node.req.headers.upgrade) {
-    return
-  }
-
   const config = useRuntimeConfig()
   
   // Initialize MQTT manager on first request
   const mqttUrl = config.mqttUrl || process.env.MQTT_URL || 'mqtt://192.168.22.5:1883'
   mqttManager.initialize(mqttUrl)
 
-  // Get or create WebSocket server
-  const server = event.node.res.socket?.server as ServerWithWebSocket | undefined
+  // Get or create Socket.IO server
+  const server = event.node.res.socket?.server as ServerWithSocketIO | undefined
   if (!server) {
-    console.error('[WebSocket] Server not available')
     return
   }
 
-  // Create WebSocket server if it doesn't exist
-  if (!server.wss) {
-    console.log('[WebSocket] Creating WebSocket server')
-    const wss = new WebSocketServer({ noServer: true })
-
-    wss.on('connection', (ws: WebSocket) => {
-      console.log('[WebSocket] New client connected')
-      mqttManager.addClient(ws)
-
-      // Send connection status
-      ws.send(JSON.stringify({
-        type: 'connected',
-        mqttConnected: mqttManager.getConnectionStatus(),
-      }))
-
-      ws.on('message', (data: Buffer) => {
-        try {
-          const message = JSON.parse(data.toString())
-          console.log('[WebSocket] Received message:', message)
-
-          switch (message.type) {
-            case 'subscribe':
-              mqttManager.subscribe(message.topic, ws)
-              break
-            case 'publish':
-              mqttManager.publish(message.topic, message.payload)
-              break
-            case 'ping':
-              ws.send(JSON.stringify({ type: 'pong' }))
-              break
-          }
-        } catch (err) {
-          console.error('[WebSocket] Error processing message:', err)
-        }
-      })
-
-      ws.on('close', () => {
-        console.log('[WebSocket] Client disconnected')
-        mqttManager.removeClient(ws)
-      })
-
-      ws.on('error', (err) => {
-        console.error('[WebSocket] WebSocket error:', err)
-        mqttManager.removeClient(ws)
-      })
-    })
-
-    server.on('upgrade', (request, socket, head) => {
-      console.log('[WebSocket] Upgrade request for:', request.url)
-      if (request.url === '/ws') {
-        wss.handleUpgrade(request, socket, head, (ws) => {
-          wss.emit('connection', ws, request)
-        })
-      } else {
-        socket.destroy()
+  // Create Socket.IO server if it doesn't exist
+  if (!server.io) {
+    console.log('[Socket.IO] Creating Socket.IO server')
+    const io = new SocketIOServer(server, {
+      path: '/socket.io',
+      cors: {
+        origin: '*',
+        methods: ['GET', 'POST']
       }
     })
 
-    server.wss = wss
+    io.on('connection', (socket) => {
+      console.log('[Socket.IO] New client connected:', socket.id)
+      mqttManager.addClient(socket)
+
+      // Send connection status
+      socket.emit('connected', {
+        mqttConnected: mqttManager.getConnectionStatus(),
+      })
+
+      socket.on('subscribe', (data: { topic: string }) => {
+        console.log('[Socket.IO] Subscribe request:', data)
+        mqttManager.subscribe(data.topic, socket)
+      })
+
+      socket.on('publish', (data: { topic: string, payload: string }) => {
+        console.log('[Socket.IO] Publish request:', data)
+        mqttManager.publish(data.topic, data.payload)
+      })
+
+      socket.on('disconnect', () => {
+        console.log('[Socket.IO] Client disconnected:', socket.id)
+        mqttManager.removeClient(socket)
+      })
+    })
+
+    server.io = io
   }
 })
