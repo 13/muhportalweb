@@ -1,21 +1,22 @@
 <template>
   <v-card height="100%">
-    <!-- Card Header -->
-    <v-list-item>
-      <template #prepend>
-        <v-icon>mdi-cog</v-icon>
-      </template>
-      <v-list-item-title class="text-h5">Einstellungen</v-list-item-title>
-      <template #append>
-        <v-btn icon variant="text" to="/">
-          <v-icon>mdi-arrow-left</v-icon>
-        </v-btn>
-      </template>
-    </v-list-item>
+    <div class="mx-auto" style="max-width: 600px;">
+      <!-- Card Header -->
+      <v-list-item>
+        <template #prepend>
+          <v-icon>mdi-cog</v-icon>
+        </template>
+        <v-list-item-title class="text-h5">Einstellungen</v-list-item-title>
+        <template #append>
+          <v-btn icon variant="text" to="/">
+            <v-icon>mdi-arrow-left</v-icon>
+          </v-btn>
+        </template>
+      </v-list-item>
 
-    <v-divider />
+      <v-divider />
 
-    <v-list class="mx-auto" style="max-width: 600px;">
+      <v-list>
       <v-list-item>
         <template #prepend>
 				  <v-icon>mdi-theme-light-dark</v-icon>
@@ -30,6 +31,7 @@
         </template>
       </v-list-item>
     </v-list>
+    </div>
   </v-card>
 </template>
 

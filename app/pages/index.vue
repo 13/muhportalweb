@@ -1,40 +1,41 @@
 <template>
   <v-card height="100%">
-    <!-- Card Header -->
-    <v-list-item>
-      <template #prepend>
-        <v-icon>mdi-lock</v-icon>
-      </template>
-      <v-list-item-title class="text-h5">Portal</v-list-item-title>
-      <template #append>
-        <v-btn icon variant="text" @click="refreshData">
-          <v-icon>mdi-refresh</v-icon>
-        </v-btn>
-        <v-btn icon variant="text" to="/config">
-          <v-icon>mdi-cog</v-icon>
-        </v-btn>
-      </template>
-    </v-list-item>
+    <div class="mx-auto" style="max-width: 600px;">
+      <!-- Card Header -->
+      <v-list-item>
+        <template #prepend>
+          <v-icon>mdi-lock</v-icon>
+        </template>
+        <v-list-item-title class="text-h5">Portal</v-list-item-title>
+        <template #append>
+          <v-btn icon variant="text" @click="refreshData">
+            <v-icon>mdi-refresh</v-icon>
+          </v-btn>
+          <v-btn icon variant="text" to="/config">
+            <v-icon>mdi-cog</v-icon>
+          </v-btn>
+        </template>
+      </v-list-item>
 
-    <!-- MQTT Connection Status -->
-    <v-progress-linear
-      class="mb-0"
-      :model-value="100"
-      :color="mqttConnectionStatusColor"
-    />
+      <!-- MQTT Connection Status -->
+      <v-progress-linear
+        class="mb-0"
+        :model-value="100"
+        :color="mqttConnectionStatusColor"
+      />
 
-    <!-- Notification Snackbar -->
-    <v-snackbar
-      v-model="isNotificationVisible"
-      :timeout="2500"
-      color="green"
-      location="top"
-    >
-      {{ notificationMessage }}
-    </v-snackbar>
+      <!-- Notification Snackbar -->
+      <v-snackbar
+        v-model="isNotificationVisible"
+        :timeout="2500"
+        color="green"
+        location="top"
+      >
+        {{ notificationMessage }}
+      </v-snackbar>
 
-    <!-- Portal List -->
-    <v-list class="mx-auto" style="max-width: 600px;">
+      <!-- Portal List -->
+      <v-list>
       <!-- House Door (HD + HDL) - First -->
       <v-list-item v-if="portalStates.HD" disabled>
         <v-list-item-title class="text-h5">Haustür</v-list-item-title>
@@ -281,6 +282,7 @@
         </v-card-text>
       </v-card>
     </v-dialog>
+    </div>
   </v-card>
 </template>
 
