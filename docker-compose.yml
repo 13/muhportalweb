@@ -6,7 +6,6 @@ services:
       PUID: ${PUID}
       PGID: ${PGID}
       TZ: Europe/Rome
-      VIRTUAL_HOST: portal.${DOMAIN}
       # MQTT Broker Configuration
       MQTT_BROKER_URL: ${MQTT_BROKER_URL:-mqtt://192.168.22.5:1883}
       # CORS Configuration
@@ -15,7 +14,5 @@ services:
       NUXT_HOST: ${NUXT_HOST:-0.0.0.0}
       NUXT_PORT: ${NUXT_PORT:-3000}
     ports:
-      - 3003:3000
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
+      - 3000:3000
     restart: unless-stopped

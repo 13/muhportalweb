@@ -25,6 +25,8 @@ function setupSocketIO(server: Server) {
   isInitializing = true
   
   const allowedOrigins = process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000']
+
+  console.log('Socket.IO: allowedOrigins: ', allowedOrigins)
   
   io = new SocketIOServer(server, {
     cors: {
