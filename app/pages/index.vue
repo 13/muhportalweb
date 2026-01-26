@@ -298,7 +298,7 @@ interface Portals {
   HDL?: PortalState  // House Door Lock
 }
 
-const { isConnected, connectToBroker, reconnectToBroker, subscribeToTopic, publishMessage } = useMqtt()
+const { isConnected, connectToBroker, reconnectToBroker, subscribeToTopic, publishMessage } = useSocketIO()
 const {
   getStateIndicatorColor,
   getDoorStateText,

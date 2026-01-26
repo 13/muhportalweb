@@ -109,7 +109,7 @@ interface NetworkHost {
   priority: number
 }
 
-const { isConnected, connectToBroker, reconnectToBroker, subscribeToTopic, publishMessage } = useMqtt()
+const { isConnected, connectToBroker, reconnectToBroker, subscribeToTopic, publishMessage } = useSocketIO()
 const { extractHostname } = useHelpers()
 
 const networkHosts = ref<NetworkHost[]>([])
