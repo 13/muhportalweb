@@ -285,6 +285,8 @@
 </template>
 
 <script setup lang="ts">
+import { debugLog } from '../utils/logger'
+
 interface PortalState {
   state: number
   time: string
@@ -351,7 +353,7 @@ const getPortalDisplayName = (portalCode: string) => {
 }
 
 const sendPortalCommand = (portalCode: string, actionCode: string) => {
-  console.log(`Portal command: ${portalCode} ${actionCode}`)
+  debugLog.log(`Portal command: ${portalCode} ${actionCode}`)
   publishMessage('muh/portal/RLY/cmnd', `${portalCode}_${actionCode}`)
   notificationMessage.value = `${getPortalDisplayName(portalCode)} ${getActionDisplayText(actionCode)} ...`
   isNotificationVisible.value = true
