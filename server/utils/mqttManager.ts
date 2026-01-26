@@ -1,6 +1,6 @@
 import mqtt from 'mqtt'
 import type { MqttClient } from 'mqtt'
-import type { WebSocket } from 'ws'
+import { WebSocket } from 'ws'
 
 interface MqttSubscription {
   topic: string
@@ -62,8 +62,21 @@ class MqttManager {
   removeClient(ws: WebSocket) {
     this.connectedClients.delete(ws)
     // Remove client from all subscriptions
-    this.subscriptions.forEach((sub) => {
+    this.subscriptions.forEach((sub, topic) => {
       sub.clients.delete(ws)
+      // Clean up empty subscriptions
+      if (sub.clients.size === 0) {
+        this.subscriptions.delete(topic)
+        if (this.client) {
+          this.client.unsubscribe(topic, (err) => {
+            if (err) {
+              console.error('[MQTT Manager] Unsubscribe error:', err)
+            } else {
+              console.log('[MQTT Manager] Unsubscribed from:', topic)
+            }
+          })
+        }
+      }
     })
     console.log('[MQTT Manager] Client disconnected. Total clients:', this.connectedClients.size)
   }
@@ -114,7 +127,7 @@ class MqttManager {
         }
 
         subscription.clients.forEach((client) => {
-          if (client.readyState === 1) { // WebSocket.OPEN
+          if (client.readyState === WebSocket.OPEN) {
             try {
               client.send(JSON.stringify(messageData))
             } catch (err) {

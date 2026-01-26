@@ -1,5 +1,11 @@
 import { WebSocketServer, WebSocket } from 'ws'
 import { mqttManager } from '../utils/mqttManager'
+import type { Server } from 'http'
+
+// Extend Server type to include WebSocket server
+interface ServerWithWebSocket extends Server {
+  wss?: WebSocketServer
+}
 
 export default defineEventHandler((event) => {
   // Skip for non-upgrade requests
@@ -14,14 +20,14 @@ export default defineEventHandler((event) => {
   mqttManager.initialize(mqttUrl)
 
   // Get or create WebSocket server
-  const server = event.node.res.socket?.server
+  const server = event.node.res.socket?.server as ServerWithWebSocket | undefined
   if (!server) {
     console.error('[WebSocket] Server not available')
     return
   }
 
   // Create WebSocket server if it doesn't exist
-  if (!(server as any).wss) {
+  if (!server.wss) {
     console.log('[WebSocket] Creating WebSocket server')
     const wss = new WebSocketServer({ noServer: true })
 
@@ -78,6 +84,6 @@ export default defineEventHandler((event) => {
       }
     })
 
-    ;(server as any).wss = wss
+    server.wss = wss
   }
 })
