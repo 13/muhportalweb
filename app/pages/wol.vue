@@ -1,5 +1,5 @@
 <template>
-  <v-card class="mx-auto" max-width="600">
+  <v-card height="100%">
     <!-- Card Header -->
     <v-list-item>
       <template #prepend>
@@ -34,7 +34,7 @@
     </v-snackbar>
 
     <!-- Hosts List -->
-    <v-list>
+    <v-list class="mx-auto" style="max-width: 600px;">
       <v-list-item
         v-for="(host, index) in hostsSortedByPriority"
         :key="index"

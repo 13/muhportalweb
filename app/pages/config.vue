@@ -1,5 +1,5 @@
 <template>
-  <v-card class="mx-auto" max-width="600">
+  <v-card height="100%">
     <!-- Card Header -->
     <v-list-item>
       <template #prepend>
@@ -15,7 +15,7 @@
 
     <v-divider />
 
-    <v-list>
+    <v-list class="mx-auto" style="max-width: 600px;">
       <v-list-item>
         <template #prepend>
 				  <v-icon>mdi-theme-light-dark</v-icon>

@@ -1,5 +1,5 @@
 <template>
-  <v-card class="mx-auto" max-width="600">
+  <v-card height="100%">
     <!-- Card Header -->
     <v-list-item>
       <template #prepend>
@@ -34,7 +34,7 @@
     </v-snackbar>
 
     <!-- Portal List -->
-    <v-list>
+    <v-list class="mx-auto" style="max-width: 600px;">
       <!-- House Door (HD + HDL) - First -->
       <v-list-item v-if="portalStates.HD" disabled>
         <v-list-item-title class="text-h5">Haustür</v-list-item-title>
