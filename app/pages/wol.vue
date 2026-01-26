@@ -101,6 +101,8 @@
 </template>
 
 <script setup lang="ts">
+import { debugLog } from '../utils/logger'
+
 interface NetworkHost {
   name: string
   ip: string
@@ -144,7 +146,7 @@ const openHostDialog = (host: NetworkHost) => {
 
 const sendWakeOnLanCommand = () => {
   if (selectedHost.value?.mac) {
-    console.log(`WOL: Waking ${selectedHost.value.name} (${selectedHost.value.mac})`)
+    debugLog.log(`WOL: Waking ${selectedHost.value.name} (${selectedHost.value.mac})`)
     publishMessage('muh/wol', JSON.stringify({ mac: selectedHost.value.mac }))
     notificationMessage.value = `Waking ${extractHostname(selectedHost.value.name)} ...`
     isNotificationVisible.value = true
@@ -153,7 +155,7 @@ const sendWakeOnLanCommand = () => {
 
 const sendShutdownCommand = () => {
   if (selectedHost.value?.mac) {
-    console.log(`WOL: Shutting down ${selectedHost.value.name} (${selectedHost.value.mac})`)
+    debugLog.log(`WOL: Shutting down ${selectedHost.value.name} (${selectedHost.value.mac})`)
     publishMessage('muh/poweroff', JSON.stringify({ mac: selectedHost.value.mac }))
     notificationMessage.value = `Shutting down ${extractHostname(selectedHost.value.name)} ...`
     isNotificationVisible.value = true
