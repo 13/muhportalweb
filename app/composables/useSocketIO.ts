@@ -30,6 +30,7 @@ export function useSocketIO() {
   const socket = ref<Socket | null>(null)
   const isConnected = ref(false)
   const activeSubscriptions = ref<SocketSubscription[]>([])
+  const { setData } = useMqttStore()
 
   const initializeSocketEventHandlers = (socketInstance: Socket) => {
     socketInstance.on('connect', () => {
@@ -49,6 +50,15 @@ export function useSocketIO() {
 
     socketInstance.on('mqtt-message', (data: { topic: string; message: string }) => {
       console.log('Socket.IO: Received MQTT message:', data.topic, data.message)
+      
+      // Store the data and check if it's actually new
+      const isNewData = setData(data.topic, data.message)
+      
+      if (!isNewData) {
+        console.log('Socket.IO: Data unchanged for topic:', data.topic, '- skipping handlers')
+        return
+      }
+      
       // Convert message string to Buffer-like object for compatibility with existing code
       const messageBuffer = createBufferLike(data.message)
       
