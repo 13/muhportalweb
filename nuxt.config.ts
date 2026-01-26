@@ -4,7 +4,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
 
-  // Client-only app (required for MQTT WebSocket usage)
+  // Client-only app
   ssr: false,
 
   // Vuetify support
@@ -14,8 +14,11 @@ export default defineNuxtConfig({
 
   // Runtime environment variables
   runtimeConfig: {
+    // Server-side MQTT broker URL (non-WebSocket)
+    mqttUrl: process.env.MQTT_URL ?? 'mqtt://192.168.22.5:1883',
     public: {
-      mqttWsUrl: process.env.MQTT_WS_URL ?? 'ws://192.168.22.5:1884',
+      // WebSocket URL for frontend to connect to backend
+      wsUrl: process.env.WS_URL ?? '',
     },
   },
   app: {
