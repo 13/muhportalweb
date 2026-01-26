@@ -7,6 +7,8 @@ services:
       PGID: ${PGID}
       TZ: Europe/Rome
       VIRTUAL_HOST: portal.${DOMAIN}
+      # For HTTPS, use wss:// to avoid mixed content errors
+      MQTT_WS_URL: ${MQTT_WS_URL:-ws://192.168.22.5:1884}
     ports:
       - 3003:3000
     volumes:
