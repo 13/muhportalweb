@@ -6,6 +6,12 @@ interface SocketSubscription {
   messageHandler: (topic: string, message: Buffer) => void
 }
 
+// Helper function to check if topic matches wildcard pattern
+function topicMatchesPattern(pattern: string, topic: string): boolean {
+  const wildcardPattern = pattern.replace(/\+/g, '[^/]+').replace(/#/g, '.*')
+  return new RegExp(`^${wildcardPattern}$`).test(topic)
+}
+
 export function useSocketIO() {
   const socket = ref<Socket | null>(null)
   const isConnected = ref(false)
@@ -33,8 +39,7 @@ export function useSocketIO() {
       
       activeSubscriptions.value.forEach((subscription) => {
         // Check if the topic matches (supports wildcards)
-        const wildcardPattern = subscription.topic.replace(/\+/g, '[^/]+').replace(/#/g, '.*')
-        if (new RegExp(`^${wildcardPattern}$`).test(data.topic)) {
+        if (topicMatchesPattern(subscription.topic, data.topic)) {
           subscription.messageHandler(data.topic, messageBuffer)
         }
       })
