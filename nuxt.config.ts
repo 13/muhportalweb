@@ -23,6 +23,36 @@ export default defineNuxtConfig({
       title: 'muhportalweb',
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+      ],
+      style: [
+        // Prevent white flash by setting initial background based on theme preference
+        {
+          children: `
+            html, body, #__nuxt {
+              background-color: #ECEFF1; /* Vuetify blueGrey.lighten5 - light theme secondary */
+            }
+            html.dark-mode, html.dark-mode body, html.dark-mode #__nuxt {
+              background-color: #263238; /* Vuetify blueGrey.darken4 - dark theme secondary */
+            }
+          `
+        }
+      ],
+      script: [
+        // Immediately apply dark mode class if stored in localStorage (runs before Vue mounts)
+        {
+          children: `
+            (function() {
+              try {
+                if (localStorage.getItem('darkMode') === 'true') {
+                  document.documentElement.classList.add('dark-mode');
+                }
+              } catch (e) {
+                // localStorage may be unavailable in private browsing mode
+              }
+            })();
+          `,
+          type: 'text/javascript'
+        }
       ]
     }
   },
