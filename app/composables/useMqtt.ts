@@ -47,7 +47,8 @@ export function useMqtt() {
 
   const connectToBroker = () => {
     if (import.meta.client && !mqttClient.value) {
-      mqttClient.value = mqtt.connect(config.public.mqttWsUrl as string)
+      // Use path: '' to prevent MQTT.js from appending /mqtt (Mosquitto doesn't use paths)
+      mqttClient.value = mqtt.connect(config.public.mqttWsUrl as string, { path: '' })
       initializeMqttEventHandlers(mqttClient.value)
     }
     return mqttClient.value
@@ -60,8 +61,8 @@ export function useMqtt() {
         mqttClient.value.end(true)
         mqttClient.value = null
       }
-      // Create new connection
-      mqttClient.value = mqtt.connect(config.public.mqttWsUrl as string)
+      // Create new connection (use path: '' to prevent MQTT.js from appending /mqtt)
+      mqttClient.value = mqtt.connect(config.public.mqttWsUrl as string, { path: '' })
       initializeMqttEventHandlers(mqttClient.value)
     }
   }
