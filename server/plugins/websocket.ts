@@ -1,4 +1,5 @@
 import { WebSocketServer, WebSocket } from 'ws'
+import { getMqttManager } from '../utils/mqttManager'
 
 let wss: WebSocketServer | null = null
 let httpServerAttached = false
@@ -128,9 +129,10 @@ export default defineNitroPlugin((nitroApp) => {
   console.log('[WebSocket Plugin] Initializing')
 
   // Try to attach to the HTTP server via the request hook
+  // Note: This uses internal Node.js APIs as Nitro doesn't expose a public API for WebSocket upgrade handling
+  // The request event provides access to the underlying HTTP server through the Node.js request object
   nitroApp.hooks.hook('request', (event) => {
-    // @ts-ignore - Access internal node property
-    const nodeReq = event.node?.req
+    const nodeReq = event.node?.req as any
     if (nodeReq && nodeReq.socket?.server && !httpServerAttached) {
       setupWebSocketServer(nodeReq.socket.server)
     }

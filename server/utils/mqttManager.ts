@@ -1,9 +1,11 @@
 import mqtt from 'mqtt'
 import type { MqttClient } from 'mqtt'
+import { randomUUID } from 'crypto'
 
 interface MqttSubscription {
   topic: string
   callback: (topic: string, message: Buffer) => void
+  wildcardPattern?: RegExp
 }
 
 class MqttManager {
@@ -18,12 +20,17 @@ class MqttManager {
   }
 
   private initialize() {
-    const mqttUrl = process.env.MQTT_BROKER_URL || 'mqtt://192.168.22.5:1883'
+    const mqttUrl = process.env.MQTT_BROKER_URL
+    
+    if (!mqttUrl) {
+      console.error('[MQTT Manager] MQTT_BROKER_URL environment variable is not set')
+      return
+    }
     
     console.log('[MQTT Manager] Connecting to broker:', mqttUrl)
     
     this.client = mqtt.connect(mqttUrl, {
-      clientId: `muhportalweb_backend_${Math.random().toString(16).slice(2, 10)}`,
+      clientId: `muhportalweb_backend_${randomUUID()}`,
       clean: true,
       reconnectPeriod: 5000,
     })
@@ -63,15 +70,18 @@ class MqttManager {
     this.client.on('message', (topic: string, message: Buffer) => {
       // Forward message to all matching subscriptions
       this.subscriptions.forEach((subscription) => {
-        const wildcardPattern = subscription.topic
-          .replace(/\+/g, '[^/]+')
-          .replace(/#/g, '.*')
-        
-        if (new RegExp(`^${wildcardPattern}$`).test(topic)) {
+        if (subscription.wildcardPattern && subscription.wildcardPattern.test(topic)) {
           subscription.callback(topic, message)
         }
       })
     })
+  }
+
+  private compileWildcardPattern(topic: string): RegExp {
+    const pattern = topic
+      .replace(/\+/g, '[^/]+')
+      .replace(/#/g, '.*')
+    return new RegExp(`^${pattern}$`)
   }
 
   subscribe(topic: string, callback: (topic: string, message: Buffer) => void) {
@@ -81,7 +91,8 @@ class MqttManager {
     )
     
     if (!existingSubscription) {
-      this.subscriptions.push({ topic, callback })
+      const wildcardPattern = this.compileWildcardPattern(topic)
+      this.subscriptions.push({ topic, callback, wildcardPattern })
       
       if (this.client && this.isConnected) {
         this.client.subscribe(topic, (err) => {
