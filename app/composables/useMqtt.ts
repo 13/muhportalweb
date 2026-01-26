@@ -1,5 +1,4 @@
-import mqtt from 'mqtt'
-import type { MqttClient } from 'mqtt'
+import { io, Socket } from 'socket.io-client'
 
 // Store subscriptions for reconnection
 interface MqttSubscription {
@@ -9,60 +8,99 @@ interface MqttSubscription {
 
 export function useMqtt() {
   const config = useRuntimeConfig()
-  const mqttClient = ref<MqttClient | null>(null)
+  const socket = ref<Socket | null>(null)
   const isConnected = ref(false)
   const activeSubscriptions = ref<MqttSubscription[]>([])
 
-  const initializeMqttEventHandlers = (client: MqttClient) => {
-    client.on('connect', () => {
-      isConnected.value = true
-      console.log('MQTT: Connected to broker')
-      // Re-subscribe to all topics after reconnect
-      activeSubscriptions.value.forEach((subscription) => {
-        client.subscribe(subscription.topic, (err) => {
-          if (err) console.error('MQTT: Subscribe error:', err)
+  const getSocketUrl = () => {
+    // Use configured WS_URL if available
+    if (config.public.wsUrl) {
+      return config.public.wsUrl
+    }
+    
+    // Otherwise, construct Socket.IO URL based on current location
+    if (import.meta.client) {
+      const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:'
+      const host = window.location.host
+      return `${protocol}//${host}`
+    }
+    
+    return 'http://localhost:3000'
+  }
+
+  const connectToSocket = () => {
+    if (import.meta.client && !socket.value) {
+      const socketUrl = getSocketUrl()
+      console.log('Socket.IO: Connecting to', socketUrl)
+      
+      try {
+        socket.value = io(socketUrl, {
+          path: '/socket.io',
+          transports: ['websocket', 'polling'],
+          autoConnect: true,
         })
-      })
-    })
 
-    client.on('close', () => {
-      isConnected.value = false
-      console.log('MQTT: Disconnected from broker')
-    })
+        socket.value.on('connect', () => {
+          console.log('Socket.IO: Connected')
+          isConnected.value = true
 
-    client.on('error', (err) => {
-      console.error('MQTT: Connection error:', err)
-    })
+          // Re-subscribe to all topics after reconnect
+          activeSubscriptions.value.forEach((subscription) => {
+            if (socket.value?.connected) {
+              socket.value.emit('subscribe', { topic: subscription.topic })
+            }
+          })
+        })
 
-    client.on('message', (topic: string, message: Buffer) => {
-      activeSubscriptions.value.forEach((subscription) => {
-        // Check if the topic matches (supports wildcards)
-        const wildcardPattern = subscription.topic.replace(/\+/g, '[^/]+').replace(/#/g, '.*')
-        if (new RegExp(`^${wildcardPattern}$`).test(topic)) {
-          subscription.messageHandler(topic, message)
-        }
-      })
-    })
+        socket.value.on('disconnect', () => {
+          console.log('Socket.IO: Disconnected')
+          isConnected.value = false
+        })
+
+        socket.value.on('connect_error', (error) => {
+          console.error('Socket.IO: Connection error', error)
+        })
+
+        socket.value.on('connected', (data: { mqttConnected: boolean }) => {
+          console.log('Socket.IO: Server connection status', data)
+        })
+
+        socket.value.on('message', (data: { topic: string, message: string }) => {
+          try {
+            const message = Buffer.from(data.message)
+            
+            // Dispatch to all matching subscriptions
+            activeSubscriptions.value.forEach((subscription) => {
+              const wildcardPattern = subscription.topic.replace(/\+/g, '[^/]+').replace(/#/g, '.*')
+              if (new RegExp(`^${wildcardPattern}$`).test(data.topic)) {
+                subscription.messageHandler(data.topic, message)
+              }
+            })
+          } catch (err) {
+            console.error('Socket.IO: Error processing message', err)
+          }
+        })
+      } catch (err) {
+        console.error('Socket.IO: Connection error', err)
+      }
+    }
   }
 
   const connectToBroker = () => {
-    if (import.meta.client && !mqttClient.value) {
-      mqttClient.value = mqtt.connect(config.public.mqttWsUrl as string)
-      initializeMqttEventHandlers(mqttClient.value)
-    }
-    return mqttClient.value
+    connectToSocket()
+    return socket.value
   }
 
   const reconnectToBroker = () => {
     if (import.meta.client) {
-      // Disconnect existing client
-      if (mqttClient.value) {
-        mqttClient.value.end(true)
-        mqttClient.value = null
+      // Disconnect existing socket
+      if (socket.value) {
+        socket.value.disconnect()
+        socket.value = null
       }
+      
       // Create new connection
-      mqttClient.value = mqtt.connect(config.public.mqttWsUrl as string)
-      initializeMqttEventHandlers(mqttClient.value)
+      connectToSocket()
     }
   }
 
@@ -73,25 +111,21 @@ export function useMqtt() {
       activeSubscriptions.value.push({ topic, messageHandler })
     }
 
-    if (mqttClient.value) {
-      mqttClient.value.subscribe(topic, (err) => {
-        if (err) {
-          console.error('MQTT: Subscribe error:', err)
-        }
-      })
+    if (socket.value?.connected) {
+      socket.value.emit('subscribe', { topic })
     }
   }
 
   const publishMessage = (topic: string, payload: string) => {
-    if (mqttClient.value) {
-      mqttClient.value.publish(topic, payload)
+    if (socket.value?.connected) {
+      socket.value.emit('publish', { topic, payload })
     }
   }
 
   const disconnectFromBroker = () => {
-    if (mqttClient.value) {
-      mqttClient.value.end()
-      mqttClient.value = null
+    if (socket.value) {
+      socket.value.disconnect()
+      socket.value = null
       isConnected.value = false
       activeSubscriptions.value = []
     }
@@ -102,7 +136,7 @@ export function useMqtt() {
   })
 
   return {
-    mqttClient,
+    mqttClient: socket,
     isConnected,
     connectToBroker,
     reconnectToBroker,
