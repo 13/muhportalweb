@@ -79,9 +79,27 @@ Create a `.env` file based on `.env.example`:
 # MQTT Broker URL (backend connects to this using standard MQTT)
 MQTT_BROKER_URL=mqtt://192.168.22.5:1883
 
+# CORS Configuration for Socket.IO (comma-separated list of allowed origins)
+# Use '*' for all origins (not recommended in production) or specific URLs
+CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
+
 # Nuxt server configuration
 NUXT_HOST=0.0.0.0
 NUXT_PORT=3000
+```
+
+### Docker Configuration
+
+Docker Compose automatically reads the `.env` file and passes environment variables to the container. You can also override variables directly:
+
+```bash
+# Using .env file (recommended)
+cp .env.example .env
+# Edit .env with your settings
+docker compose up
+
+# Or override specific variables via command line
+MQTT_BROKER_URL=mqtt://broker.example.com:1883 docker compose up
 ```
 
 ## MQTT Topics

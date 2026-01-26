@@ -20,7 +20,12 @@ COPY . .
 RUN npm run build
 
 EXPOSE 3000
+
+# Runtime environment variables with defaults
+# These can be overridden when running the container via docker-compose or docker run
 ENV NUXT_HOST=0.0.0.0
 ENV NUXT_PORT=3000
+ENV MQTT_BROKER_URL=mqtt://192.168.22.5:1883
+ENV CORS_ORIGINS=
 
 CMD [ "node", ".output/server/index.mjs" ]
