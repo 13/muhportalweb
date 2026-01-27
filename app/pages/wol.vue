@@ -1,5 +1,5 @@
 <template>
-  <v-app-bar :elevation="0">
+  <v-app-bar :elevation="1">
     <template v-slot:prepend>
       <v-app-bar-nav-icon>
         <v-icon color="primary">mdi-lan</v-icon>
@@ -23,88 +23,92 @@
     :model-value="100"
     :color="mqttConnectionStatusColor"
   />
-  <v-card class="mx-auto">
-    <!-- Notification Snackbar -->
-    <v-snackbar
-      v-model="isNotificationVisible"
-      :timeout="2000"
-      color="green"
-      location="top"
-    >
-      {{ notificationMessage }}
-    </v-snackbar>
-
-    <!-- Hosts List -->
-    <v-list>
-      <v-list-item
-        v-for="(host, index) in hostsSortedByPriority"
-        :key="index"
-        :disabled="!host.mac"
-        @click="openHostDialog(host)"
+  <v-container fluid class="d-flex justify-center pa-0 pa-md-6">
+    <v-card class="w-100 ma-0" max-width="800">
+      <!-- Notification Snackbar -->
+      <v-snackbar
+        v-model="isNotificationVisible"
+        :timeout="2000"
+        color="green"
+        location="top"
       >
-        <v-list-item-title>{{ extractHostname(host.name) }}</v-list-item-title>
-        <template #append>
-          <v-btn
-            :color="host.alive ? 'green' : 'red'"
-            size="small"
-            elevation="0"
-          >
-            {{ host.alive ? "on" : "off" }}
-          </v-btn>
-        </template>
-      </v-list-item>
-    </v-list>
+        {{ notificationMessage }}
+      </v-snackbar>
 
-    <!-- Host Action Dialog -->
-    <v-dialog v-model="isHostDialogVisible" max-width="480">
-      <v-card>
-        <v-card-title class="text-h5 bg-ternary text-center">
-          {{ extractHostname(selectedHost?.name || "") }}
-        </v-card-title>
-        <v-card-text>
-          <v-container fluid>
-            <v-row>
-              <v-col>
-                <v-btn block variant="text">
-                  <v-icon start :color="selectedHost?.alive ? 'green' : 'red'"
-                    >mdi-checkbox-blank</v-icon
+      <!-- Hosts List -->
+      <v-list>
+        <v-list-item
+          v-for="(host, index) in hostsSortedByPriority"
+          :key="index"
+          :disabled="!host.mac"
+          @click="openHostDialog(host)"
+        >
+          <v-list-item-title>{{
+            extractHostname(host.name)
+          }}</v-list-item-title>
+          <template #append>
+            <v-btn
+              :color="host.alive ? 'green' : 'red'"
+              size="small"
+              elevation="0"
+            >
+              {{ host.alive ? "on" : "off" }}
+            </v-btn>
+          </template>
+        </v-list-item>
+      </v-list>
+
+      <!-- Host Action Dialog -->
+      <v-dialog v-model="isHostDialogVisible" max-width="480">
+        <v-card>
+          <v-card-title class="text-h5 bg-ternary text-center">
+            {{ extractHostname(selectedHost?.name || "") }}
+          </v-card-title>
+          <v-card-text>
+            <v-container fluid>
+              <v-row>
+                <v-col>
+                  <v-btn block variant="text">
+                    <v-icon start :color="selectedHost?.alive ? 'green' : 'red'"
+                      >mdi-checkbox-blank</v-icon
+                    >
+                    {{ selectedHost?.alive ? "Online" : "Offline" }}
+                  </v-btn>
+                </v-col>
+              </v-row>
+              <v-row>
+                <v-col>
+                  <v-btn block color="secondary" @click="sendWakeOnLanCommand">
+                    <v-icon start>mdi-power</v-icon>
+                    Wake
+                  </v-btn>
+                </v-col>
+              </v-row>
+              <v-row>
+                <v-col>
+                  <v-btn block color="secondary" @click="sendShutdownCommand">
+                    <v-icon start>mdi-power</v-icon>
+                    Shutdown
+                  </v-btn>
+                </v-col>
+              </v-row>
+              <v-row>
+                <v-col>
+                  <v-btn
+                    block
+                    color="primary"
+                    @click="isHostDialogVisible = false"
                   >
-                  {{ selectedHost?.alive ? "Online" : "Offline" }}
-                </v-btn>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col>
-                <v-btn block color="secondary" @click="sendWakeOnLanCommand">
-                  <v-icon start>mdi-power</v-icon>
-                  Wake
-                </v-btn>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col>
-                <v-btn block color="secondary" @click="sendShutdownCommand">
-                  <v-icon start>mdi-power</v-icon>
-                  Shutdown
-                </v-btn>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col>
-                <v-btn
-                  block
-                  color="primary"
-                  @click="isHostDialogVisible = false"
-                >
-                  Abbrechen
-                </v-btn>
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card-text>
-      </v-card>
-    </v-dialog>
-  </v-card>
+                    Abbrechen
+                  </v-btn>
+                </v-col>
+              </v-row>
+            </v-container>
+          </v-card-text>
+        </v-card>
+      </v-dialog>
+    </v-card>
+  </v-container>
 </template>
 
 <script setup lang="ts">
