@@ -3,12 +3,12 @@
     <v-main>
       <slot />
     </v-main>
-    <v-bottom-navigation app color="primary" grow style="justify-content: center;">
-      <v-btn to="/" value="portal" style="flex: 1 1 auto; max-width: 168px;">
+    <v-bottom-navigation app grow color="primary">
+      <v-btn to="/" value="portal">
         <v-icon>mdi-lock</v-icon>
         <span>Portal</span>
       </v-btn>
-      <v-btn to="/wol" value="wol" style="flex: 1 1 auto; max-width: 168px;">
+      <v-btn to="/wol" value="wol">
         <v-icon>mdi-lan</v-icon>
         <span>WOL</span>
       </v-btn>
