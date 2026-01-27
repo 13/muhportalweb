@@ -1,28 +1,29 @@
 <template>
+  <v-app-bar :elevation="0">
+    <template v-slot:prepend>
+      <v-app-bar-nav-icon>
+        <v-icon color="primary">mdi-lock</v-icon>
+      </v-app-bar-nav-icon>
+    </template>
+
+    <v-app-bar-title class="text-h5">Portal</v-app-bar-title>
+
+    <template v-slot:append>
+      <v-btn icon variant="text" @click="refreshData">
+        <v-icon color="primary">mdi-refresh</v-icon>
+      </v-btn>
+      <v-btn icon variant="text" to="/config">
+        <v-icon color="primary">mdi-cog</v-icon>
+      </v-btn>
+    </template>
+  </v-app-bar>
+  <!-- MQTT Connection Status -->
+  <v-progress-linear
+    class="mb-0"
+    :model-value="100"
+    :color="mqttConnectionStatusColor"
+  />
   <v-card class="mx-auto">
-    <!-- Card Header -->
-    <v-list-item>
-      <template #prepend>
-        <v-icon>mdi-lock</v-icon>
-      </template>
-      <v-list-item-title class="text-h5">Portal</v-list-item-title>
-      <template #append>
-        <v-btn icon variant="text" @click="refreshData">
-          <v-icon>mdi-refresh</v-icon>
-        </v-btn>
-        <v-btn icon variant="text" to="/config">
-          <v-icon>mdi-cog</v-icon>
-        </v-btn>
-      </template>
-    </v-list-item>
-
-    <!-- MQTT Connection Status -->
-    <v-progress-linear
-      class="mb-0"
-      :model-value="100"
-      :color="mqttConnectionStatusColor"
-    />
-
     <!-- Notification Snackbar -->
     <v-snackbar
       v-model="isNotificationVisible"
@@ -52,7 +53,11 @@
           <v-col cols="12" sm="6">
             <v-list-item @click="dialogVisibility.houseDoor = true">
               <template #prepend>
-                <v-icon :color="getStateIndicatorColor(portalStates.HD?.state)" class="opacity-100">mdi-checkbox-blank</v-icon>
+                <v-icon
+                  :color="getStateIndicatorColor(portalStates.HD?.state)"
+                  class="opacity-100"
+                  >mdi-checkbox-blank</v-icon
+                >
               </template>
               <v-list-item-title class="text-h5">
                 {{ getDoorStateText(portalStates.HD?.state) }}
@@ -62,7 +67,11 @@
           <v-col v-if="portalStates.HDL">
             <v-list-item @click="dialogVisibility.houseDoor = true">
               <template #prepend>
-                <v-icon :color="getStateIndicatorColor(portalStates.HDL?.state)" class="opacity-100">mdi-checkbox-blank</v-icon>
+                <v-icon
+                  :color="getStateIndicatorColor(portalStates.HDL?.state)"
+                  class="opacity-100"
+                  >mdi-checkbox-blank</v-icon
+                >
               </template>
               <v-list-item-title class="text-h5">
                 {{ getDoorLockStateText(portalStates.HDL?.state) }}
@@ -89,7 +98,11 @@
           <v-col cols="12" sm="6">
             <v-list-item @click="dialogVisibility.garageDoor = true">
               <template #prepend>
-                <v-icon :color="getStateIndicatorColor(portalStates.GD?.state)" class="opacity-100">mdi-checkbox-blank</v-icon>
+                <v-icon
+                  :color="getStateIndicatorColor(portalStates.GD?.state)"
+                  class="opacity-100"
+                  >mdi-checkbox-blank</v-icon
+                >
               </template>
               <v-list-item-title class="text-h5">
                 {{ getDoorStateText(portalStates.GD?.state) }}
@@ -99,7 +112,11 @@
           <v-col v-if="portalStates.GDL">
             <v-list-item @click="dialogVisibility.garageDoor = true">
               <template #prepend>
-                <v-icon :color="getStateIndicatorColor(portalStates.GDL?.state)" class="opacity-100">mdi-checkbox-blank</v-icon>
+                <v-icon
+                  :color="getStateIndicatorColor(portalStates.GDL?.state)"
+                  class="opacity-100"
+                  >mdi-checkbox-blank</v-icon
+                >
               </template>
               <v-list-item-title class="text-h5">
                 {{ getDoorLockStateText(portalStates.GDL?.state) }}
@@ -123,7 +140,11 @@
           <v-col>
             <v-list-item @click="dialogVisibility.garage = true">
               <template #prepend>
-                <v-icon :color="getStateIndicatorColor(portalStates.G?.state)" class="opacity-100">mdi-checkbox-blank</v-icon>
+                <v-icon
+                  :color="getStateIndicatorColor(portalStates.G?.state)"
+                  class="opacity-100"
+                  >mdi-checkbox-blank</v-icon
+                >
               </template>
               <v-list-item-title class="text-h5">
                 {{ getDoorStateText(portalStates.G?.state) }}
@@ -145,14 +166,22 @@
             <v-row>
               <v-col>
                 <v-btn block variant="text">
-                  <v-icon start :color="getStateIndicatorColor(portalStates.G?.state)">mdi-checkbox-blank</v-icon>
+                  <v-icon
+                    start
+                    :color="getStateIndicatorColor(portalStates.G?.state)"
+                    >mdi-checkbox-blank</v-icon
+                  >
                   {{ getDoorStateText(portalStates.G?.state) }}
                 </v-btn>
               </v-col>
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block color="secondary" @click="sendPortalCommand('G', 'T')">
+                <v-btn
+                  block
+                  color="secondary"
+                  @click="sendPortalCommand('G', 'T')"
+                >
                   <v-icon start>mdi-arrow-up-down-bold</v-icon>
                   Bewegen
                 </v-btn>
@@ -160,7 +189,11 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block color="primary" @click="dialogVisibility.garage = false">
+                <v-btn
+                  block
+                  color="primary"
+                  @click="dialogVisibility.garage = false"
+                >
                   Abbrechen
                 </v-btn>
               </v-col>
@@ -181,20 +214,32 @@
             <v-row>
               <v-col>
                 <v-btn block variant="text">
-                  <v-icon start :color="getStateIndicatorColor(portalStates.GD?.state)">mdi-checkbox-blank</v-icon>
+                  <v-icon
+                    start
+                    :color="getStateIndicatorColor(portalStates.GD?.state)"
+                    >mdi-checkbox-blank</v-icon
+                  >
                   {{ getDoorStateText(portalStates.GD?.state) }}
                 </v-btn>
               </v-col>
               <v-col v-if="portalStates.GDL">
                 <v-btn block variant="text">
-                  <v-icon start :color="getStateIndicatorColor(portalStates.GDL?.state)">mdi-checkbox-blank</v-icon>
+                  <v-icon
+                    start
+                    :color="getStateIndicatorColor(portalStates.GDL?.state)"
+                    >mdi-checkbox-blank</v-icon
+                  >
                   {{ getDoorLockStateText(portalStates.GDL?.state) }}
                 </v-btn>
               </v-col>
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block color="secondary" @click="sendPortalCommand('GD', 'O')">
+                <v-btn
+                  block
+                  color="secondary"
+                  @click="sendPortalCommand('GD', 'O')"
+                >
                   <v-icon start>mdi-door-open</v-icon>
                   Öffnen
                 </v-btn>
@@ -202,13 +247,21 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block color="secondary" @click="sendPortalCommand('GD', 'U')">
+                <v-btn
+                  block
+                  color="secondary"
+                  @click="sendPortalCommand('GD', 'U')"
+                >
                   <v-icon start>mdi-lock-open-variant</v-icon>
                   Entriegeln
                 </v-btn>
               </v-col>
               <v-col>
-                <v-btn block color="secondary" @click="sendPortalCommand('GD', 'L')">
+                <v-btn
+                  block
+                  color="secondary"
+                  @click="sendPortalCommand('GD', 'L')"
+                >
                   <v-icon start>mdi-lock</v-icon>
                   Verriegeln
                 </v-btn>
@@ -216,7 +269,11 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block color="primary" @click="dialogVisibility.garageDoor = false">
+                <v-btn
+                  block
+                  color="primary"
+                  @click="dialogVisibility.garageDoor = false"
+                >
                   Abbrechen
                 </v-btn>
               </v-col>
@@ -237,20 +294,32 @@
             <v-row>
               <v-col>
                 <v-btn block variant="text">
-                  <v-icon start :color="getStateIndicatorColor(portalStates.HD?.state)">mdi-checkbox-blank</v-icon>
+                  <v-icon
+                    start
+                    :color="getStateIndicatorColor(portalStates.HD?.state)"
+                    >mdi-checkbox-blank</v-icon
+                  >
                   {{ getDoorStateText(portalStates.HD?.state) }}
                 </v-btn>
               </v-col>
               <v-col v-if="portalStates.HDL">
                 <v-btn block variant="text">
-                  <v-icon start :color="getStateIndicatorColor(portalStates.HDL?.state)">mdi-checkbox-blank</v-icon>
+                  <v-icon
+                    start
+                    :color="getStateIndicatorColor(portalStates.HDL?.state)"
+                    >mdi-checkbox-blank</v-icon
+                  >
                   {{ getDoorLockStateText(portalStates.HDL?.state) }}
                 </v-btn>
               </v-col>
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block color="secondary" @click="sendPortalCommand('HD', 'O')">
+                <v-btn
+                  block
+                  color="secondary"
+                  @click="sendPortalCommand('HD', 'O')"
+                >
                   <v-icon start>mdi-door-open</v-icon>
                   Öffnen
                 </v-btn>
@@ -258,13 +327,21 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block color="secondary" @click="sendPortalCommand('HD', 'U')">
+                <v-btn
+                  block
+                  color="secondary"
+                  @click="sendPortalCommand('HD', 'U')"
+                >
                   <v-icon start>mdi-lock-open-variant</v-icon>
                   Entriegeln
                 </v-btn>
               </v-col>
               <v-col>
-                <v-btn block color="secondary" @click="sendPortalCommand('HD', 'L')">
+                <v-btn
+                  block
+                  color="secondary"
+                  @click="sendPortalCommand('HD', 'L')"
+                >
                   <v-icon start>mdi-lock</v-icon>
                   Verriegeln
                 </v-btn>
@@ -272,7 +349,11 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block color="primary" @click="dialogVisibility.houseDoor = false">
+                <v-btn
+                  block
+                  color="primary"
+                  @click="dialogVisibility.houseDoor = false"
+                >
                   Abbrechen
                 </v-btn>
               </v-col>
@@ -285,98 +366,115 @@
 </template>
 
 <script setup lang="ts">
-import { debugLog } from '../utils/logger'
+import { debugLog } from "../utils/logger";
 
 interface PortalState {
-  state: number
-  time: string
+  state: number;
+  time: string;
 }
 
 interface Portals {
-  G?: PortalState    // Garage
-  GD?: PortalState   // Garage Door
-  GDL?: PortalState  // Garage Door Lock
-  HD?: PortalState   // House Door
-  HDL?: PortalState  // House Door Lock
+  G?: PortalState; // Garage
+  GD?: PortalState; // Garage Door
+  GDL?: PortalState; // Garage Door Lock
+  HD?: PortalState; // House Door
+  HDL?: PortalState; // House Door Lock
 }
 
-const { isConnected, connectToBroker, reconnectToBroker, subscribeToTopic, publishMessage } = useSocketIO()
+const {
+  isConnected,
+  connectToBroker,
+  reconnectToBroker,
+  subscribeToTopic,
+  publishMessage,
+} = useSocketIO();
 const {
   getStateIndicatorColor,
   getDoorStateText,
   getDoorLockStateText,
   formatRelativeDateTime,
-} = useHelpers()
+} = useHelpers();
 
-const portalStates = reactive<Portals>({})
-const isNotificationVisible = ref(false)
-const notificationMessage = ref('')
+const portalStates = reactive<Portals>({});
+const isNotificationVisible = ref(false);
+const notificationMessage = ref("");
 
 // Connection status color: green=connected, red=disconnected
 const mqttConnectionStatusColor = computed(() => {
-  return isConnected.value ? 'green' : 'red'
-})
+  return isConnected.value ? "green" : "red";
+});
 
 // Dialog visibility states
 const dialogVisibility = reactive({
   garage: false,
   garageDoor: false,
   houseDoor: false,
-})
+});
 
 const refreshData = () => {
   // Clear local state
   // Object.keys(portalStates).forEach((key) => delete portalStates[key as keyof Portals])
   // Reconnect to MQTT
-  reconnectToBroker()
-}
+  reconnectToBroker();
+};
 
 const getActionDisplayText = (actionCode: string) => {
   switch (actionCode) {
-    case 'T': return 'Bewegen'
-    case 'O': return 'Öffnen'
-    case 'L': return 'Verriegeln'
-    case 'U': return 'Entriegeln'
-    default: return actionCode
+    case "T":
+      return "Bewegen";
+    case "O":
+      return "Öffnen";
+    case "L":
+      return "Verriegeln";
+    case "U":
+      return "Entriegeln";
+    default:
+      return actionCode;
   }
-}
+};
 
 const getPortalDisplayName = (portalCode: string) => {
   switch (portalCode) {
-    case 'G': return 'Garage'
-    case 'GD': return 'Garagentür'
-    case 'GDL': return 'Garagentür Riegel'
-    case 'HD': return 'Haustür'
-    case 'HDL': return 'Haustür Riegel'
-    default: return portalCode
+    case "G":
+      return "Garage";
+    case "GD":
+      return "Garagentür";
+    case "GDL":
+      return "Garagentür Riegel";
+    case "HD":
+      return "Haustür";
+    case "HDL":
+      return "Haustür Riegel";
+    default:
+      return portalCode;
   }
-}
+};
 
 const sendPortalCommand = (portalCode: string, actionCode: string) => {
-  debugLog.log(`Portal command: ${portalCode} ${actionCode}`)
-  publishMessage('muh/portal/RLY/cmnd', `${portalCode}_${actionCode}`)
-  notificationMessage.value = `${getPortalDisplayName(portalCode)} ${getActionDisplayText(actionCode)} ...`
-  isNotificationVisible.value = true
-}
+  debugLog.log(`Portal command: ${portalCode} ${actionCode}`);
+  publishMessage("muh/portal/RLY/cmnd", `${portalCode}_${actionCode}`);
+  notificationMessage.value = `${getPortalDisplayName(portalCode)} ${getActionDisplayText(actionCode)} ...`;
+  isNotificationVisible.value = true;
+};
 
 onMounted(() => {
-  connectToBroker()
+  connectToBroker();
 
   // Subscribe to portal state updates (G, GD, GDL, HD, HDL)
-  subscribeToTopic('muh/portal/+/json', (topic: string, message: Buffer) => {
-    const topicMatch = topic.match(/muh\/portal\/([A-Z]+)\/json/)
+  subscribeToTopic("muh/portal/+/json", (topic: string, message: Buffer) => {
+    const topicMatch = topic.match(/muh\/portal\/([A-Z]+)\/json/);
     if (topicMatch) {
       try {
-        const portalCode = topicMatch[1] as keyof Portals
-        const stateData = JSON.parse(message.toString()) as PortalState
+        const portalCode = topicMatch[1] as keyof Portals;
+        const stateData = JSON.parse(message.toString()) as PortalState;
         portalStates[portalCode] = {
           state: stateData.state,
           time: stateData.time,
-        }
+        };
       } catch {
         // Invalid JSON payload - ignore
       }
     }
-  })
-})
+  });
+});
 </script>

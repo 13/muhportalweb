@@ -1,28 +1,29 @@
 <template>
+  <v-app-bar :elevation="0">
+    <template v-slot:prepend>
+      <v-app-bar-nav-icon>
+        <v-icon color="primary">mdi-lan</v-icon>
+      </v-app-bar-nav-icon>
+    </template>
+
+    <v-app-bar-title class="text-h5">WOL</v-app-bar-title>
+
+    <template v-slot:append>
+      <v-btn icon variant="text" @click="refreshData">
+        <v-icon color="primary">mdi-refresh</v-icon>
+      </v-btn>
+      <v-btn icon variant="text" to="/config">
+        <v-icon color="primary">mdi-cog</v-icon>
+      </v-btn>
+    </template>
+  </v-app-bar>
+  <!-- MQTT Connection Status -->
+  <v-progress-linear
+    class="mb-0"
+    :model-value="100"
+    :color="mqttConnectionStatusColor"
+  />
   <v-card class="mx-auto">
-    <!-- Card Header -->
-    <v-list-item>
-      <template #prepend>
-        <v-icon>mdi-lan</v-icon>
-      </template>
-      <v-list-item-title class="text-h5">WOL</v-list-item-title>
-      <template #append>
-        <v-btn icon variant="text" @click="refreshData">
-          <v-icon>mdi-refresh</v-icon>
-        </v-btn>
-        <v-btn icon variant="text" to="/config">
-          <v-icon>mdi-cog</v-icon>
-        </v-btn>
-      </template>
-    </v-list-item>
-
-    <!-- MQTT Connection Status -->
-    <v-progress-linear
-      class="mb-0"
-      :model-value="100"
-      :color="mqttConnectionStatusColor"
-    />
-
     <!-- Notification Snackbar -->
     <v-snackbar
       v-model="isNotificationVisible"
@@ -48,7 +49,7 @@
             size="small"
             elevation="0"
           >
-            {{ host.alive ? 'on' : 'off' }}
+            {{ host.alive ? "on" : "off" }}
           </v-btn>
         </template>
       </v-list-item>
@@ -58,15 +59,17 @@
     <v-dialog v-model="isHostDialogVisible" max-width="480">
       <v-card>
         <v-card-title class="text-h5 bg-ternary text-center">
-          {{ extractHostname(selectedHost?.name || '') }}
+          {{ extractHostname(selectedHost?.name || "") }}
         </v-card-title>
         <v-card-text>
           <v-container fluid>
             <v-row>
               <v-col>
                 <v-btn block variant="text">
-                  <v-icon start :color="selectedHost?.alive ? 'green' : 'red'">mdi-checkbox-blank</v-icon>
-                  {{ selectedHost?.alive ? 'Online' : 'Offline' }}
+                  <v-icon start :color="selectedHost?.alive ? 'green' : 'red'"
+                    >mdi-checkbox-blank</v-icon
+                  >
+                  {{ selectedHost?.alive ? "Online" : "Offline" }}
                 </v-btn>
               </v-col>
             </v-row>
@@ -88,7 +91,11 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-btn block color="primary" @click="isHostDialogVisible = false">
+                <v-btn
+                  block
+                  color="primary"
+                  @click="isHostDialogVisible = false"
+                >
                   Abbrechen
                 </v-btn>
               </v-col>
@@ -101,82 +108,97 @@
 </template>
 
 <script setup lang="ts">
-import { debugLog } from '../utils/logger'
+import { debugLog } from "../utils/logger";
 
 interface NetworkHost {
-  name: string
-  ip: string
-  mac: string
-  alive: boolean
-  priority: number
+  name: string;
+  ip: string;
+  mac: string;
+  alive: boolean;
+  priority: number;
 }
 
-const { isConnected, connectToBroker, reconnectToBroker, subscribeToTopic, publishMessage } = useSocketIO()
-const { extractHostname } = useHelpers()
+const {
+  isConnected,
+  connectToBroker,
+  reconnectToBroker,
+  subscribeToTopic,
+  publishMessage,
+} = useSocketIO();
+const { extractHostname } = useHelpers();
 
-const networkHosts = ref<NetworkHost[]>([])
-const isNotificationVisible = ref(false)
-const notificationMessage = ref('')
-const isHostDialogVisible = ref(false)
-const selectedHost = ref<NetworkHost | null>(null)
+const networkHosts = ref<NetworkHost[]>([]);
+const isNotificationVisible = ref(false);
+const notificationMessage = ref("");
+const isHostDialogVisible = ref(false);
+const selectedHost = ref<NetworkHost | null>(null);
 
 // Connection status color: green=connected, red=disconnected
 const mqttConnectionStatusColor = computed(() => {
-  return isConnected.value ? 'green' : 'red'
-})
+  return isConnected.value ? "green" : "red";
+});
 
 // Sort hosts by priority (lower number = higher priority)
 const hostsSortedByPriority = computed(() => {
-  return [...networkHosts.value].sort((a, b) => a.priority - b.priority)
-})
+  return [...networkHosts.value].sort((a, b) => a.priority - b.priority);
+});
 
 const refreshData = () => {
   // Clear local state
   // networkHosts.value = []
   // Reconnect to MQTT
-  reconnectToBroker()
-}
+  reconnectToBroker();
+};
 
 const openHostDialog = (host: NetworkHost) => {
   if (host.mac) {
-    selectedHost.value = host
-    isHostDialogVisible.value = true
+    selectedHost.value = host;
+    isHostDialogVisible.value = true;
   }
-}
+};
 
 const sendWakeOnLanCommand = () => {
   if (selectedHost.value?.mac) {
-    debugLog.log(`WOL: Waking ${selectedHost.value.name} (${selectedHost.value.mac})`)
-    publishMessage('muh/wol', JSON.stringify({ mac: selectedHost.value.mac }))
-    notificationMessage.value = `Waking ${extractHostname(selectedHost.value.name)} ...`
-    isNotificationVisible.value = true
+    debugLog.log(
+      `WOL: Waking ${selectedHost.value.name} (${selectedHost.value.mac})`,
+    );
+    publishMessage("muh/wol", JSON.stringify({ mac: selectedHost.value.mac }));
+    notificationMessage.value = `Waking ${extractHostname(selectedHost.value.name)} ...`;
+    isNotificationVisible.value = true;
   }
-}
+};
 
 const sendShutdownCommand = () => {
   if (selectedHost.value?.mac) {
-    debugLog.log(`WOL: Shutting down ${selectedHost.value.name} (${selectedHost.value.mac})`)
-    publishMessage('muh/poweroff', JSON.stringify({ mac: selectedHost.value.mac }))
-    notificationMessage.value = `Shutting down ${extractHostname(selectedHost.value.name)} ...`
-    isNotificationVisible.value = true
+    debugLog.log(
+      `WOL: Shutting down ${selectedHost.value.name} (${selectedHost.value.mac})`,
+    );
+    publishMessage(
+      "muh/poweroff",
+      JSON.stringify({ mac: selectedHost.value.mac }),
+    );
+    notificationMessage.value = `Shutting down ${extractHostname(selectedHost.value.name)} ...`;
+    isNotificationVisible.value = true;
   }
-}
+};
 
 onMounted(() => {
-  connectToBroker()
+  connectToBroker();
 
   // Subscribe to host status updates
-  subscribeToTopic('muh/pc/#', (topic: string, message: Buffer) => {
+  subscribeToTopic("muh/pc/#", (topic: string, message: Buffer) => {
     try {
-      const hostData = JSON.parse(message.toString()) as NetworkHost
+      const hostData = JSON.parse(message.toString()) as NetworkHost;
       // Update existing host or add new one
       if (hostData.name) {
-        const existingHost = networkHosts.value.find((h) => h.name === hostData.name)
+        const existingHost = networkHosts.value.find(
+          (h) => h.name === hostData.name,
+        );
         if (existingHost) {
-          existingHost.ip = hostData.ip
-          existingHost.mac = hostData.mac
-          existingHost.alive = hostData.alive
-          existingHost.priority = hostData.priority
+          existingHost.ip = hostData.ip;
+          existingHost.mac = hostData.mac;
+          existingHost.alive = hostData.alive;
+          existingHost.priority = hostData.priority;
         } else {
           networkHosts.value.push({
             name: hostData.name,
@@ -184,12 +206,12 @@ onMounted(() => {
             mac: hostData.mac,
             alive: hostData.alive,
             priority: hostData.priority,
-          })
+          });
         }
       }
     } catch {
       // Invalid JSON payload - ignore
     }
-  })
-})
+  });
+});
 </script>
