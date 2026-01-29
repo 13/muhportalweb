@@ -1,8 +1,8 @@
 <template>
   <v-app-bar :elevation="0">
     <template v-slot:prepend>
-      <v-app-bar-nav-icon>
-        <v-icon color="primary">mdi-lock</v-icon>
+      <v-app-bar-nav-icon :color="mqttConnectionStatusColor">
+        <v-icon>mdi-lock</v-icon>
       </v-app-bar-nav-icon>
     </template>
 
