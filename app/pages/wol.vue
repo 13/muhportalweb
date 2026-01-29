@@ -2,7 +2,7 @@
   <v-app-bar :elevation="1">
     <template v-slot:prepend>
       <v-app-bar-nav-icon :color="mqttConnectionStatusColor">
-        <v-icon color="primary">mdi-lan</v-icon>
+        <v-icon>mdi-lan</v-icon>
       </v-app-bar-nav-icon>
     </template>
 
