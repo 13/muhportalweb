@@ -25,53 +25,54 @@
   />
   <v-container fluid class="d-flex justify-center pa-0 pa-md-6">
     <v-card class="w-100 ma-0" max-width="800">
-      <!-- Notification Snackbar -->
-      <v-snackbar
-        v-model="isNotificationVisible"
-        :timeout="2000"
-        color="green"
-        location="top"
-      >
-        {{ notificationMessage }}
-      </v-snackbar>
-
-      <!-- Hosts List -->
       <v-list>
-        <v-list-item
-          v-for="(host, index) in hostsSortedByPriority"
-          :key="index"
-          :disabled="!host.mac"
-          @click="openHostDialog(host)"
-        >
-          <v-list-item-title>{{
-            extractHostname(host.name)
-          }}</v-list-item-title>
+        <!-- Temperatur -->
+        <v-list-item>
+          <v-list-item-title>
+            Temperatur {{ formatTemp(temperatur.temp) }} {{ formatHumidity(temperatur.humidity) }}
+          </v-list-item-title>
+        </v-list-item>
+
+        <v-divider />
+
+        <!-- Kommer -->
+        <v-list-item>
+          <v-list-item-title>
+            Kommer {{ formatTemp(kommer.temp) }} {{ formatHumidity(kommer.humidity) }}
+          </v-list-item-title>
           <template #append>
-            <v-btn
-              :color="host.alive ? 'green' : 'red'"
-              size="small"
-              elevation="0"
-            >
-              {{ host.alive ? "on" : "off" }}
-            </v-btn>
+            <v-switch
+              :model-value="kommerPower"
+              color="green"
+              hide-details
+              density="compact"
+              @update:model-value="toggleKommer"
+            />
+          </template>
+        </v-list-item>
+
+        <!-- Brenner -->
+        <v-list-item>
+          <v-list-item-title>
+            Brenner {{ formatTemp(brenner.temp1) }} {{ formatTemp(brenner.temp2) }}
+          </v-list-item-title>
+          <template #append>
+            <v-switch
+              :model-value="brennerPower"
+              color="green"
+              hide-details
+              density="compact"
+              @update:model-value="toggleBrenner"
+            />
           </template>
         </v-list-item>
       </v-list>
-
     </v-card>
   </v-container>
 </template>
 
 <script setup lang="ts">
 import { debugLog } from "../utils/logger";
-
-interface NetworkHost {
-  name: string;
-  ip: string;
-  mac: string;
-  alive: boolean;
-  priority: number;
-}
 
 const {
   isConnected,
@@ -80,55 +81,102 @@ const {
   subscribeToTopic,
   publishMessage,
 } = useSocketIO();
-const { extractHostname } = useHelpers();
 
-const networkHosts = ref<NetworkHost[]>([]);
-const isNotificationVisible = ref(false);
-const notificationMessage = ref("");
-const isHostDialogVisible = ref(false);
-const selectedHost = ref<NetworkHost | null>(null);
+// Sensor state
+const temperatur = ref<{ temp: number | null; humidity: number | null }>({ temp: null, humidity: null });
+const kommer = ref<{ temp: number | null; humidity: number | null }>({ temp: null, humidity: null });
+const brenner = ref<{ temp1: number | null; temp2: number | null }>({ temp1: null, temp2: null });
+const kommerPower = ref(false);
+const brennerPower = ref(false);
 
-// Connection status color: green=connected, red=disconnected
 const mqttConnectionStatusColor = computed(() => {
   return isConnected.value ? "green" : "red";
 });
 
+// Format temperature with comma decimal separator and degree sign
+const formatTemp = (value: number | null): string => {
+  if (value === null) return "--°";
+  return value.toFixed(1).replace(".", ",") + "°";
+};
+
+// Format humidity with percent sign (no decimal)
+const formatHumidity = (value: number | null): string => {
+  if (value === null) return "--%";
+  return Math.round(value) + "%";
+};
+
+const toggleKommer = (val: boolean) => {
+  publishMessage("tasmota/cmnd/tasmota_BDC5E0/POWER", val ? "1" : "0");
+};
+
+const toggleBrenner = (val: boolean) => {
+  publishMessage("tasmota/cmnd/tasmota_34AB95A7EEA3/POWER", val ? "1" : "0");
+};
+
 const refreshData = () => {
-  // Clear local state
-  // networkHosts.value = []
-  // Reconnect to MQTT
   reconnectToBroker();
 };
 
 onMounted(() => {
   connectToBroker();
 
-  // Subscribe to host status updates
-  subscribeToTopic("muh/pc/#", (topic: string, message: Buffer) => {
+  // Temperatur: muh/wst/data/B327
+  subscribeToTopic("muh/wst/data/B327", (topic: string, message: { toString(): string }) => {
     try {
-      const hostData = JSON.parse(message.toString()) as NetworkHost;
-      // Update existing host or add new one
-      if (hostData.name) {
-        const existingHost = networkHosts.value.find(
-          (h) => h.name === hostData.name,
-        );
-        if (existingHost) {
-          existingHost.ip = hostData.ip;
-          existingHost.mac = hostData.mac;
-          existingHost.alive = hostData.alive;
-          existingHost.priority = hostData.priority;
-        } else {
-          networkHosts.value.push({
-            name: hostData.name,
-            ip: hostData.ip,
-            mac: hostData.mac,
-            alive: hostData.alive,
-            priority: hostData.priority,
-          });
-        }
-      }
+      const data = JSON.parse(message.toString());
+      temperatur.value = { temp: data.temp_c ?? null, humidity: data.humidity ?? null };
     } catch {
-      // Invalid JSON payload - ignore
+      // ignore
+    }
+  });
+
+  // Kommer sensor: muh/sensors/87/json
+  subscribeToTopic("muh/sensors/87/json", (topic: string, message: { toString(): string }) => {
+    try {
+      const data = JSON.parse(message.toString());
+      kommer.value = { temp: data.T1 ?? null, humidity: data.H1 ?? null };
+    } catch {
+      // ignore
+    }
+  });
+
+  // Kommer switch state: tasmota/tele/tasmota_BDC5E0/STATE
+  subscribeToTopic("tasmota/tele/tasmota_BDC5E0/STATE", (topic: string, message: { toString(): string }) => {
+    try {
+      const data = JSON.parse(message.toString());
+      kommerPower.value = data.POWER === "ON";
+    } catch {
+      // ignore
+    }
+  });
+
+  // Brenner temp 1: muh/sensors/HZ_WW/DS18B20-3628FF/json
+  subscribeToTopic("muh/sensors/HZ_WW/DS18B20-3628FF/json", (topic: string, message: { toString(): string }) => {
+    try {
+      const data = JSON.parse(message.toString());
+      brenner.value.temp1 = data.DS18B20?.Temperature ?? null;
+    } catch {
+      // ignore
+    }
+  });
+
+  // Brenner temp 2: muh/sensors/HZ_WW/DS18B20-1C16E1/json
+  subscribeToTopic("muh/sensors/HZ_WW/DS18B20-1C16E1/json", (topic: string, message: { toString(): string }) => {
+    try {
+      const data = JSON.parse(message.toString());
+      brenner.value.temp2 = data.DS18B20?.Temperature ?? null;
+    } catch {
+      // ignore
+    }
+  });
+
+  // Brenner switch state: tasmota/tele/tasmota_34AB95A7EEA3/STATE
+  subscribeToTopic("tasmota/tele/tasmota_34AB95A7EEA3/STATE", (topic: string, message: { toString(): string }) => {
+    try {
+      const data = JSON.parse(message.toString());
+      brennerPower.value = data.POWER === "ON";
+    } catch {
+      // ignore
     }
   });
 });
