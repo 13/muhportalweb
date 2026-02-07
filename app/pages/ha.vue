@@ -28,8 +28,19 @@
       <v-list>
         <!-- Temperatur -->
         <v-list-item>
-          <v-list-item-title>
-            Temperatur {{ formatTemp(temperatur.temp) }} {{ formatHumidity(temperatur.humidity) }}
+          <v-list-item-title
+            class="d-flex justify-space-between align-center w-100"
+          >
+            <span>Temperatur</span>
+
+            <span class="d-flex align-center ga-2">
+              <span class="font-weight-bold">
+                {{ formatTemp(temperatur.temp) }}
+              </span>
+              <span class="text-caption">
+                {{ formatHumidity(temperatur.humidity) }}
+              </span>
+            </span>
           </v-list-item-title>
         </v-list-item>
 
@@ -37,9 +48,21 @@
 
         <!-- Kommer -->
         <v-list-item>
-          <v-list-item-title>
-            Kommer {{ formatTemp(kommer.temp) }} {{ formatHumidity(kommer.humidity) }}
+          <v-list-item-title
+            class="d-flex justify-space-between align-center w-100"
+          >
+            <span>Kommer</span>
+
+            <span class="d-flex align-center ga-2 pr-4">
+              <span class="font-weight-bold">
+                {{ formatTemp(kommer.temp) }}
+              </span>
+              <span class="text-caption">
+                {{ formatHumidity(kommer.humidity) }}
+              </span>
+            </span>
           </v-list-item-title>
+
           <template #append>
             <v-switch
               :model-value="kommerPower"
@@ -53,9 +76,21 @@
 
         <!-- Brenner -->
         <v-list-item>
-          <v-list-item-title>
-            Brenner {{ formatTemp(brenner.temp1) }} {{ formatTemp(brenner.temp2) }}
+          <v-list-item-title
+            class="d-flex justify-space-between align-center w-100"
+          >
+            <span>Brenner</span>
+
+            <span class="d-flex align-center ga-2 pr-4">
+              <span class="font-weight-bold">
+                {{ formatTemp(brenner.temp1) }}
+              </span>
+              <span class="text-caption">
+                {{ formatTemp(brenner.temp2) }}
+              </span>
+            </span>
           </v-list-item-title>
+
           <template #append>
             <v-switch
               :model-value="brennerPower"
@@ -83,9 +118,18 @@ const {
 } = useSocketIO();
 
 // Sensor state
-const temperatur = ref<{ temp: number | null; humidity: number | null }>({ temp: null, humidity: null });
-const kommer = ref<{ temp: number | null; humidity: number | null }>({ temp: null, humidity: null });
-const brenner = ref<{ temp1: number | null; temp2: number | null }>({ temp1: null, temp2: null });
+const temperatur = ref<{ temp: number | null; humidity: number | null }>({
+  temp: null,
+  humidity: null,
+});
+const kommer = ref<{ temp: number | null; humidity: number | null }>({
+  temp: null,
+  humidity: null,
+});
+const brenner = ref<{ temp1: number | null; temp2: number | null }>({
+  temp1: null,
+  temp2: null,
+});
 const kommerPower = ref(false);
 const brennerPower = ref(false);
 
@@ -110,7 +154,7 @@ const toggleKommer = (val: boolean) => {
 };
 
 const toggleBrenner = (val: boolean) => {
-  publishMessage("tasmota/cmnd/tasmota_34AB95A7EEA3/POWER", val ? "1" : "0");
+  publishMessage("tasmota/cmnd/tasmota_A7EEA3/POWER", val ? "1" : "0");
 };
 
 const refreshData = () => {
@@ -121,63 +165,84 @@ onMounted(() => {
   connectToBroker();
 
   // Temperatur: muh/wst/data/B327
-  subscribeToTopic("muh/wst/data/B327", (topic: string, message: { toString(): string }) => {
-    try {
-      const data = JSON.parse(message.toString());
-      temperatur.value = { temp: data.temp_c ?? null, humidity: data.humidity ?? null };
-    } catch {
-      // ignore
-    }
-  });
+  subscribeToTopic(
+    "muh/wst/data/B327",
+    (topic: string, message: { toString(): string }) => {
+      try {
+        const data = JSON.parse(message.toString());
+        temperatur.value = {
+          temp: data.temp_c ?? null,
+          humidity: data.humidity ?? null,
+        };
+      } catch {
+        // ignore
+      }
+    },
+  );
 
   // Kommer sensor: muh/sensors/87/json
-  subscribeToTopic("muh/sensors/87/json", (topic: string, message: { toString(): string }) => {
-    try {
-      const data = JSON.parse(message.toString());
-      kommer.value = { temp: data.T1 ?? null, humidity: data.H1 ?? null };
-    } catch {
-      // ignore
-    }
-  });
+  subscribeToTopic(
+    "muh/sensors/87/json",
+    (topic: string, message: { toString(): string }) => {
+      try {
+        const data = JSON.parse(message.toString());
+        kommer.value = { temp: data.T1 ?? null, humidity: data.H1 ?? null };
+      } catch {
+        // ignore
+      }
+    },
+  );
 
   // Kommer switch state: tasmota/tele/tasmota_BDC5E0/STATE
-  subscribeToTopic("tasmota/tele/tasmota_BDC5E0/STATE", (topic: string, message: { toString(): string }) => {
-    try {
-      const data = JSON.parse(message.toString());
-      kommerPower.value = data.POWER === "ON";
-    } catch {
-      // ignore
-    }
-  });
+  subscribeToTopic(
+    "tasmota/tele/tasmota_BDC5E0/STATE",
+    (topic: string, message: { toString(): string }) => {
+      try {
+        const data = JSON.parse(message.toString());
+        kommerPower.value = data.POWER === "ON";
+      } catch {
+        // ignore
+      }
+    },
+  );
 
   // Brenner temp 1: muh/sensors/HZ_WW/DS18B20-3628FF/json
-  subscribeToTopic("muh/sensors/HZ_WW/DS18B20-3628FF/json", (topic: string, message: { toString(): string }) => {
-    try {
-      const data = JSON.parse(message.toString());
-      brenner.value.temp1 = data.DS18B20?.Temperature ?? null;
-    } catch {
-      // ignore
-    }
-  });
+  subscribeToTopic(
+    "muh/sensors/HZ_WW/DS18B20-3628FF/json",
+    (topic: string, message: { toString(): string }) => {
+      try {
+        const data = JSON.parse(message.toString());
+        brenner.value.temp1 = data.DS18B20?.Temperature ?? null;
+      } catch {
+        // ignore
+      }
+    },
+  );
 
   // Brenner temp 2: muh/sensors/HZ_WW/DS18B20-1C16E1/json
-  subscribeToTopic("muh/sensors/HZ_WW/DS18B20-1C16E1/json", (topic: string, message: { toString(): string }) => {
-    try {
-      const data = JSON.parse(message.toString());
-      brenner.value.temp2 = data.DS18B20?.Temperature ?? null;
-    } catch {
-      // ignore
-    }
-  });
+  subscribeToTopic(
+    "muh/sensors/HZ_WW/DS18B20-1C16E1/json",
+    (topic: string, message: { toString(): string }) => {
+      try {
+        const data = JSON.parse(message.toString());
+        brenner.value.temp2 = data.DS18B20?.Temperature ?? null;
+      } catch {
+        // ignore
+      }
+    },
+  );
 
-  // Brenner switch state: tasmota/tele/tasmota_34AB95A7EEA3/STATE
-  subscribeToTopic("tasmota/tele/tasmota_34AB95A7EEA3/STATE", (topic: string, message: { toString(): string }) => {
-    try {
-      const data = JSON.parse(message.toString());
-      brennerPower.value = data.POWER === "ON";
-    } catch {
-      // ignore
-    }
-  });
+  // Brenner switch state: tasmota/tele/tasmota_A7EEA3/STATE
+  subscribeToTopic(
+    "tasmota/tele/tasmota_A7EEA3/STATE",
+    (topic: string, message: { toString(): string }) => {
+      try {
+        const data = JSON.parse(message.toString());
+        brennerPower.value = data.POWER === "ON";
+      } catch {
+        // ignore
+      }
+    },
+  );
 });
 </script>
