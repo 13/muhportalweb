@@ -65,7 +65,8 @@
 
           <template #append>
             <v-switch
-              :model-value="kommerPower"
+              v-model="kommerPowerLocal"
+              :disabled="!isConnected"
               color="green"
               hide-details
               density="compact"
@@ -93,7 +94,8 @@
 
           <template #append>
             <v-switch
-              :model-value="brennerPower"
+              v-model="brennerPowerLocal"
+              :disabled="!isConnected"
               color="green"
               hide-details
               density="compact"
@@ -132,6 +134,8 @@ const brenner = ref<{ temp1: number | null; temp2: number | null }>({
 });
 const kommerPower = ref(false);
 const brennerPower = ref(false);
+const kommerPowerLocal = ref(false);
+const brennerPowerLocal = ref(false);
 
 const mqttConnectionStatusColor = computed(() => {
   return isConnected.value ? "green" : "red";
@@ -199,7 +203,10 @@ onMounted(() => {
     (topic: string, message: { toString(): string }) => {
       try {
         const data = JSON.parse(message.toString());
-        kommerPower.value = data.POWER === "ON";
+        const power = data.POWER === "ON";
+
+        kommerPower.value = power; // MQTT truth
+        kommerPowerLocal.value = power; // sync UI
       } catch {
         // ignore
       }
@@ -238,7 +245,10 @@ onMounted(() => {
     (topic: string, message: { toString(): string }) => {
       try {
         const data = JSON.parse(message.toString());
-        brennerPower.value = data.POWER === "ON";
+        const power = data.POWER === "ON";
+
+        brennerPower.value = power;
+        brennerPowerLocal.value = power;
       } catch {
         // ignore
       }
