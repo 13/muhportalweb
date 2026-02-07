@@ -12,6 +12,10 @@
         <v-icon>mdi-lan</v-icon>
         <span>WOL</span>
       </v-btn>
+      <v-btn to="/ha" value="ha">
+        <v-icon>mdi-lightbulb</v-icon>
+        <span>HA</span>
+      </v-btn>
     </v-bottom-navigation>
   </v-app>
 </template>
