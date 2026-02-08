@@ -58,7 +58,7 @@
                 {{ formatEnergy(pvShelly.power) }}
               </span>
               <span class="text-caption">
-                {{ pv.e1 }}/{{ pv.e2 }}
+                {{ formatEnergy1(pv.p1) }}/{{ formatEnergy1(pv.p2) }}
               </span>
             </span>
           </v-list-item-title>
@@ -75,7 +75,7 @@
                 {{ formatEnergyKwh(pvShelly.today) }}
               </span>
               <span class="text-caption">
-                {{ pv.p1 }}/{{ pv.p2 }}
+                {{ formatEnergyKwh1(pv.e1) }}/{{ formatEnergyKwh1(pv.e2) }}
               </span>
             </span>
           </v-list-item-title>
@@ -219,13 +219,13 @@ const {
 } = useSocketIO();
 
 // Sensor state
-const pv = ref<{ e1: number | null; e2: number; p1: number; p2: number | null }>({
+const pv = ref<{ e1: number | null; e2: number | null; p1: number | null; p2: number | null }>({
   e1: null,
   e2: null,
   p1: null,
   p2: null,
 });
-const energy = ref<{ power: number | null; sumImport: number; sumExport: number | null }>({
+const energy = ref<{ power: number | null; sumImport: number | null; sumExport: number | null }>({
   power: null,
   sumImport: null,
   sumExport: null,
@@ -277,6 +277,14 @@ const formatEnergyKwh = (value: number | null): string => {
   if (value === null) return "-- kWh";
   return value.toFixed(1).replace(".", ",") + " kWh";
 };
+const formatEnergy1 = (value: number | null): string => {
+  if (value === null) return "--";
+  return value.toFixed(0).replace(".", ",");
+};
+const formatEnergyKwh1 = (value: number | null): string => {
+  if (value === null) return "--";
+  return value.toFixed(1).replace(".", ",");
+};
 
 const toggleKommer = (val: boolean) => {
   publishMessage("tasmota/cmnd/tasmota_BDC5E0/POWER", val ? "1" : "0");
@@ -316,10 +324,10 @@ onMounted(() => {
       try {
         const data = JSON.parse(message.toString());
         pv.value = {
-          e1: data.e1 ?? null,
-          e2: data.e2 ?? null,
-          p1: data.p1 ?? null,
-          p2: data.p2 ?? null,
+          e1: data.data.e1 ?? null,
+          e2: data.data.e2 ?? null,
+          p1: data.data.p1 ?? null,
+          p2: data.data.p2 ?? null,
         };
       } catch {
         // ignore
