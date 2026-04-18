@@ -119,7 +119,7 @@ interface NetworkHost {
   ip: string;
   mac: string;
   alive: boolean;
-  priority: number;
+  priority?: number;
 }
 
 const {
@@ -142,9 +142,12 @@ const mqttConnectionStatusColor = computed(() => {
   return isConnected.value ? "green" : "red";
 });
 
-// Sort hosts by priority (lower number = higher priority)
+// Sort hosts by priority ascending: 1 is highest and appears first.
+// Hosts with no priority fall to the bottom.
 const hostsSortedByPriority = computed(() => {
-  return [...networkHosts.value].sort((a, b) => a.priority - b.priority);
+  return [...networkHosts.value].sort(
+    (a, b) => (a.priority ?? Infinity) - (b.priority ?? Infinity),
+  );
 });
 
 const refreshData = () => {
@@ -202,14 +205,16 @@ onMounted(() => {
           existingHost.ip = hostData.ip;
           existingHost.mac = hostData.mac;
           existingHost.alive = hostData.alive;
-          existingHost.priority = hostData.priority;
+          if (hostData.priority != null) {
+            existingHost.priority = hostData.priority;
+          }
         } else {
           networkHosts.value.push({
             name: hostData.name,
             ip: hostData.ip,
             mac: hostData.mac,
             alive: hostData.alive,
-            priority: hostData.priority,
+            priority: hostData.priority ?? undefined,
           });
         }
       }
