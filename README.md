@@ -1,4 +1,4 @@
-# MuhPortalWeb
+# <img src="assets/muhportal.png" width="30" height="30" /> MuhPortalWeb
 
 **MUH Portal Web** - Home Automation Frontend
 
