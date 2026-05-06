@@ -1,6 +1,6 @@
 {
   "name": "muhportalweb",
-  "version": "2.1.2",
+  "version": "2.1.4",
   "description": "MUH Portal Web - Home Automation Frontend",
   "type": "module",
   "private": true,
