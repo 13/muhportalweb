@@ -56,8 +56,12 @@
 
         <!-- Version + Build -->
         <v-card-text class="pt-0 text-center">
-          <div class="text-body-2">Version: {{ appVersion }}</div>
-          <div class="text-body-2">Build Date: {{ formattedBuildDate }}</div>
+          <div class="text-body-2">
+            Version: <span class="font-weight-bold">{{ appVersion }}</span>
+          </div>
+          <div class="text-body-2">
+            Build Date: <span class="font-weight-bold">{{ formattedBuildDate }}</span>
+          </div>
         </v-card-text>
       </v-card>
     </div>
@@ -69,7 +73,19 @@ import pkg from "../../package.json";
 
 const appVersion = pkg.version;
 const buildDate = useRuntimeConfig().public.buildDate as string;
-const formattedBuildDate = new Date(buildDate).toLocaleString();
+const formatBuildDate = (value: string) => {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  const pad = (num: number) => String(num).padStart(2, "0");
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
+
+const formattedBuildDate = formatBuildDate(buildDate);
 const isDarkModeEnabled = ref(false);
 const setDarkMode = inject<(enableDarkMode: boolean) => void>("setDarkMode");
 
