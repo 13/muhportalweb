@@ -15,7 +15,7 @@ export default defineNuxtConfig({
   // Runtime environment variables
   runtimeConfig: {
     public: {
-      // No runtime config needed - Socket.IO connects to same server
+      buildDate: new Date().toISOString(),
     },
   },
   app: {
