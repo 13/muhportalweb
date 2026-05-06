@@ -10,6 +10,7 @@ A modern home automation frontend built with Nuxt 4, Vue 3, Vuetify 3, and MQTT
  * [Features](#features)
  * [Installation](#installation)
  * [Configuration](#configuration)
+ * [Docker Image Automation](#docker-image-automation)
  * [MQTT Topics](#mqtt-topics)
 
 ## Screenshots
@@ -101,6 +102,24 @@ docker compose up
 # Or override specific variables via command line
 MQTT_BROKER_URL=mqtt://broker.example.com:1883 docker compose up
 ```
+
+## Docker Image Automation
+
+Pushing a git tag to GitHub automatically builds and publishes a Docker image to GitHub Container Registry (GHCR).
+
+```bash
+# Example release tag
+git tag v2.1.2
+git push origin v2.1.2
+```
+
+That workflow publishes an image like:
+
+```bash
+ghcr.io/13/muhportalweb:v2.1.2
+```
+
+If you want to change the registry later, update the GitHub Actions workflow in `.github/workflows/docker-image.yml`.
 
 ## MQTT Topics
 
