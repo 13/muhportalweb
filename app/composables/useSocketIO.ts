@@ -115,6 +115,12 @@ export function useSocketIO() {
     }
   }
 
+  const configureMqtt = (server: string, username?: string, password?: string) => {
+    if (socket.value?.connected) {
+      socket.value.emit('mqtt-configure', { server, username, password })
+    }
+  }
+
   const disconnectFromBroker = () => {
     if (socket.value) {
       socket.value.disconnect()
@@ -135,6 +141,7 @@ export function useSocketIO() {
     reconnectToBroker,
     subscribeToTopic,
     publishMessage,
+    configureMqtt,
     disconnectFromBroker,
   }
 }

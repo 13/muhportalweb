@@ -452,9 +452,12 @@ const getPortalDisplayName = (portalCode: string) => {
   }
 };
 
+const { loadSettings } = useMqttSettings();
+const mqttTopics = loadSettings();
+
 const sendPortalCommand = (portalCode: string, actionCode: string) => {
   debugLog.log(`Portal command: ${portalCode} ${actionCode}`);
-  publishMessage("muh/portal/RLY/cmnd", `${portalCode}_${actionCode}`);
+  publishMessage(mqttTopics.portalPublishTopic, `${portalCode}_${actionCode}`);
   notificationMessage.value = `${getPortalDisplayName(portalCode)} ${getActionDisplayText(actionCode)} ...`;
   isNotificationVisible.value = true;
 };
@@ -463,7 +466,7 @@ onMounted(() => {
   connectToBroker();
 
   // Subscribe to portal state updates (G, GD, GDL, HD, HDL)
-  subscribeToTopic("muh/portal/+/json", (topic: string, message: Buffer) => {
+  subscribeToTopic(mqttTopics.portalSubscribeTopic, (topic: string, message: Buffer) => {
     const topicMatch = topic.match(/muh\/portal\/([A-Z]+)\/json/);
     if (topicMatch) {
       try {

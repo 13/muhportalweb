@@ -164,12 +164,15 @@ const openHostDialog = (host: NetworkHost) => {
   }
 };
 
+const { loadSettings } = useMqttSettings();
+const mqttTopics = loadSettings();
+
 const sendWakeOnLanCommand = () => {
   if (selectedHost.value?.mac) {
     debugLog.log(
       `WOL: Waking ${selectedHost.value.name} (${selectedHost.value.mac})`,
     );
-    publishMessage("muh/wol", JSON.stringify({ mac: selectedHost.value.mac }));
+    publishMessage(mqttTopics.wolWakeTopic, JSON.stringify({ mac: selectedHost.value.mac }));
     notificationMessage.value = `Waking ${extractHostname(selectedHost.value.name)} ...`;
     isNotificationVisible.value = true;
   }
@@ -181,7 +184,7 @@ const sendShutdownCommand = () => {
       `WOL: Shutting down ${selectedHost.value.name} (${selectedHost.value.mac})`,
     );
     publishMessage(
-      "muh/poweroff",
+      mqttTopics.wolShutdownTopic,
       JSON.stringify({ mac: selectedHost.value.mac }),
     );
     notificationMessage.value = `Shutting down ${extractHostname(selectedHost.value.name)} ...`;
@@ -193,7 +196,7 @@ onMounted(() => {
   connectToBroker();
 
   // Subscribe to host status updates
-  subscribeToTopic("muh/pc/#", (topic: string, message: Buffer) => {
+  subscribeToTopic(mqttTopics.wolSubscribeTopic, (topic: string, message: Buffer) => {
     try {
       const hostData = JSON.parse(message.toString()) as NetworkHost;
       // Update existing host or add new one

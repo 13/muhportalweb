@@ -4,45 +4,93 @@ import type { MqttClient } from 'mqtt'
 import type { Server } from 'node:http'
 import { debugLog } from '../utils/logger'
 
-// Store subscriptions and handlers
 interface MqttSubscription {
   topic: string
-  clients: Set<string> // Socket IDs
+  clients: Set<string>
 }
 
 const subscriptions = new Map<string, MqttSubscription>()
-// Cache for storing the last message received on each topic
 const messageCache = new Map<string, string>()
 let mqttClient: MqttClient | null = null
 let io: SocketIOServer | null = null
 let isInitializing = false
 
-// Helper function to check if topic matches wildcard pattern
 function topicMatchesPattern(pattern: string, topic: string): boolean {
   const wildcardPattern = pattern.replace(/\+/g, '[^/]+').replace(/#/g, '.*')
   return new RegExp(`^${wildcardPattern}$`).test(topic)
 }
 
-function setupSocketIO(server: Server) {
-  if (io || isInitializing) return // Prevent race conditions
-  isInitializing = true
-  
-  const allowedOrigins = process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000']
+function setupMqttClient(url: string, username?: string, password?: string) {
+  if (mqttClient) {
+    mqttClient.end(true)
+    mqttClient = null
+  }
 
+  debugLog.log('MQTT: Connecting to broker:', url)
+  const options: mqtt.IClientOptions = {}
+  if (username) options.username = username
+  if (password) options.password = password
+
+  mqttClient = mqtt.connect(url, options)
+
+  mqttClient.on('connect', () => {
+    debugLog.log('MQTT: Connected to broker')
+    // Re-subscribe to all active topics
+    subscriptions.forEach((_, topic) => {
+      mqttClient?.subscribe(topic)
+    })
+  })
+
+  mqttClient.on('close', () => {
+    debugLog.log('MQTT: Disconnected from broker')
+  })
+
+  mqttClient.on('error', (err) => {
+    debugLog.error('MQTT: Connection error:', err)
+  })
+
+  mqttClient.on('message', (topic: string, message: Buffer) => {
+    debugLog.log('MQTT: Received message on topic:', topic, 'Content:', message.toString())
+
+    messageCache.set(topic, message.toString())
+
+    const subscription = subscriptions.get(topic)
+    if (subscription && io) {
+      subscription.clients.forEach((socketId) => {
+        const socket = io!.sockets.sockets.get(socketId)
+        if (socket) {
+          socket.emit('mqtt-message', { topic, message: message.toString() })
+        }
+      })
+    }
+
+    subscriptions.forEach((sub, subTopic) => {
+      if (subTopic !== topic && topicMatchesPattern(subTopic, topic)) {
+        sub.clients.forEach((socketId) => {
+          const socket = io?.sockets.sockets.get(socketId)
+          if (socket) {
+            socket.emit('mqtt-message', { topic, message: message.toString() })
+          }
+        })
+      }
+    })
+  })
+}
+
+function setupSocketIO(server: Server) {
+  if (io || isInitializing) return
+  isInitializing = true
+
+  const allowedOrigins = process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000']
   debugLog.log('Socket.IO: allowedOrigins: ', allowedOrigins)
-  
+
   io = new SocketIOServer(server, {
     cors: {
       origin: (origin, callback) => {
-        // Allow requests with no origin (mobile apps, Postman, etc.)
         if (!origin) return callback(null, true)
-        
-        // In development, allow any localhost origin
         if (process.env.NODE_ENV !== 'production' && (origin?.includes('localhost') || origin?.includes('127.0.0.1'))) {
           return callback(null, true)
         }
-        
-        // Check against allowed origins
         if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
           callback(null, true)
         } else {
@@ -62,13 +110,8 @@ function setupSocketIO(server: Server) {
       const { topic } = data
       debugLog.log('Socket.IO: Client', socket.id, 'subscribing to:', topic)
 
-      // Add client to subscription
       if (!subscriptions.has(topic)) {
-        subscriptions.set(topic, {
-          topic,
-          clients: new Set(),
-        })
-        // Subscribe to MQTT topic if this is the first client
+        subscriptions.set(topic, { topic, clients: new Set() })
         debugLog.log('Socket.IO: First subscription to', topic, '- subscribing to MQTT broker')
         mqttClient?.subscribe(topic, (err) => {
           if (err) {
@@ -82,17 +125,11 @@ function setupSocketIO(server: Server) {
         debugLog.log('Socket.IO: Adding client to existing subscription for:', topic)
       }
       subscriptions.get(topic)?.clients.add(socket.id)
-      debugLog.log('Socket.IO: Total clients subscribed to', topic, ':', subscriptions.get(topic)?.clients.size)
 
-      // Send cached messages to the new subscriber
-      // Check both exact topic matches and wildcard pattern matches
       messageCache.forEach((cachedMessage, cachedTopic) => {
         if (cachedTopic === topic || topicMatchesPattern(topic, cachedTopic)) {
           debugLog.log('Socket.IO: Sending cached message to new subscriber for topic:', cachedTopic)
-          socket.emit('mqtt-message', {
-            topic: cachedTopic,
-            message: cachedMessage,
-          })
+          socket.emit('mqtt-message', { topic: cachedTopic, message: cachedMessage })
         }
       })
     })
@@ -100,7 +137,6 @@ function setupSocketIO(server: Server) {
     socket.on('mqtt-publish', (data: { topic: string; payload: string }) => {
       const { topic, payload } = data
       debugLog.log('Socket.IO: Client publishing to:', topic, payload)
-      
       if (mqttClient) {
         mqttClient.publish(topic, payload)
       } else {
@@ -108,14 +144,16 @@ function setupSocketIO(server: Server) {
       }
     })
 
+    socket.on('mqtt-configure', (data: { server: string; username?: string; password?: string }) => {
+      debugLog.log('Socket.IO: Client requesting MQTT reconfiguration to:', data.server)
+      setupMqttClient(data.server, data.username, data.password)
+      socket.emit('mqtt-configured', { server: data.server })
+    })
+
     socket.on('disconnect', () => {
       debugLog.log('Socket.IO: Client disconnected:', socket.id)
-      
-      // Remove client from all subscriptions
       subscriptions.forEach((sub, topic) => {
         sub.clients.delete(socket.id)
-        
-        // Unsubscribe from MQTT if no more clients
         if (sub.clients.size === 0) {
           mqttClient?.unsubscribe(topic)
           subscriptions.delete(topic)
@@ -129,73 +167,17 @@ function setupSocketIO(server: Server) {
 }
 
 export default defineNitroPlugin((nitroApp) => {
-  // Get MQTT broker URL from environment
   const mqttBrokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://192.168.22.5:1883'
-  
   debugLog.log('Setting up Socket.IO and MQTT bridge...')
-  debugLog.log('MQTT Broker URL:', mqttBrokerUrl)
 
-  // Initialize MQTT client
-  mqttClient = mqtt.connect(mqttBrokerUrl)
+  setupMqttClient(mqttBrokerUrl)
 
-  mqttClient.on('connect', () => {
-    debugLog.log('MQTT: Connected to broker')
-  })
-
-  mqttClient.on('close', () => {
-    debugLog.log('MQTT: Disconnected from broker')
-  })
-
-  mqttClient.on('error', (err) => {
-    debugLog.error('MQTT: Connection error:', err)
-  })
-
-  mqttClient.on('message', (topic: string, message: Buffer) => {
-    debugLog.log('MQTT: Received message on topic:', topic, 'Content:', message.toString())
-    
-    // Cache the last message for this topic
-    messageCache.set(topic, message.toString())
-    
-    // Forward MQTT messages to all subscribed Socket.IO clients
-    const subscription = subscriptions.get(topic)
-    if (subscription && io) {
-      debugLog.log('MQTT: Forwarding to', subscription.clients.size, 'client(s) subscribed to exact topic:', topic)
-      subscription.clients.forEach((socketId) => {
-        const socket = io.sockets.sockets.get(socketId)
-        if (socket) {
-          socket.emit('mqtt-message', {
-            topic,
-            message: message.toString(),
-          })
-        }
-      })
-    }
-
-    // Also check for wildcard subscriptions
-    subscriptions.forEach((sub, subTopic) => {
-      if (subTopic !== topic && topicMatchesPattern(subTopic, topic)) {
-        debugLog.log('MQTT: Forwarding to', sub.clients.size, 'client(s) via wildcard subscription:', subTopic)
-        sub.clients.forEach((socketId) => {
-          const socket = io?.sockets.sockets.get(socketId)
-          if (socket) {
-            socket.emit('mqtt-message', {
-              topic,
-              message: message.toString(),
-            })
-          }
-        })
-      }
-    })
-  })
-
-  // Try to initialize Socket.IO when server is ready
   nitroApp.hooks.hookOnce('request', (event) => {
     if (!io && event.node.res.socket?.server) {
       setupSocketIO(event.node.res.socket.server)
     }
   })
 
-  // Cleanup on shutdown
   nitroApp.hooks.hook('close', () => {
     if (mqttClient) {
       mqttClient.end()

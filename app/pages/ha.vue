@@ -286,12 +286,19 @@ const formatEnergyKwh1 = (value: number | null): string => {
   return value.toFixed(1).replace(".", ",");
 };
 
+const { loadSettings } = useMqttSettings();
+const mqttTopics = loadSettings();
+
+// Resolves dot/bracket paths like 'ENERGY.Power[0]' or 'DS18B20.Temperature'
+const getPath = (obj: any, path: string): any =>
+  path.split(/[.[\]]/).filter(Boolean).reduce((cur: any, key: string) => cur?.[key], obj)
+
 const toggleKommer = (val: boolean) => {
-  publishMessage("tasmota/cmnd/tasmota_BDC5E0/POWER", val ? "1" : "0");
+  publishMessage(mqttTopics.haKommerCmndTopic, val ? "1" : "0");
 };
 
 const toggleBrenner = (val: boolean) => {
-  publishMessage("tasmota/cmnd/tasmota_A7EEA3/POWER", val ? "1" : "0");
+  publishMessage(mqttTopics.haBrennerCmndTopic, val ? "1" : "0");
 };
 
 const refreshData = () => {
@@ -301,15 +308,14 @@ const refreshData = () => {
 onMounted(() => {
   connectToBroker();
 
-  // Temperatur: muh/wst/data/B327
   subscribeToTopic(
-    "muh/wst/data/B327",
+    mqttTopics.haTemperaturTopic,
     (topic: string, message: { toString(): string }) => {
       try {
         const data = JSON.parse(message.toString());
         temperatur.value = {
-          temp: data.temp_c ?? null,
-          humidity: data.humidity ?? null,
+          temp: getPath(data, mqttTopics.haTemperaturFieldTemp) ?? null,
+          humidity: getPath(data, mqttTopics.haTemperaturFieldHumidity) ?? null,
         };
       } catch {
         // ignore
@@ -317,17 +323,16 @@ onMounted(() => {
     },
   );
 
-  // PV 
   subscribeToTopic(
-    "muh/pv/E07000055917/json",
+    mqttTopics.haPvTopic,
     (topic: string, message: { toString(): string }) => {
       try {
         const data = JSON.parse(message.toString());
         pv.value = {
-          e1: data.data.e1 ?? null,
-          e2: data.data.e2 ?? null,
-          p1: data.data.p1 ?? null,
-          p2: data.data.p2 ?? null,
+          e1: getPath(data, mqttTopics.haPvFieldE1) ?? null,
+          e2: getPath(data, mqttTopics.haPvFieldE2) ?? null,
+          p1: getPath(data, mqttTopics.haPvFieldP1) ?? null,
+          p2: getPath(data, mqttTopics.haPvFieldP2) ?? null,
         };
       } catch {
         // ignore
@@ -335,15 +340,14 @@ onMounted(() => {
     },
   );
 
-  // 3EM: tasmota/tele/tasmota_5FF8B2/SENSOR
   subscribeToTopic(
-    "tasmota/tele/tasmota_1B4444/SENSOR",
+    mqttTopics.haPvShellyTopic,
     (topic: string, message: { toString(): string }) => {
       try {
         const data = JSON.parse(message.toString());
         pvShelly.value = {
-          power: data.ENERGY.Power ?? null,
-          today: data.ENERGY.Today ?? null,
+          power: getPath(data, mqttTopics.haPvShellyFieldPower) ?? null,
+          today: getPath(data, mqttTopics.haPvShellyFieldToday) ?? null,
         };
       } catch {
         // ignore
@@ -351,16 +355,15 @@ onMounted(() => {
     },
   );
 
-  // 3EM: tasmota/tele/tasmota_5FF8B2/SENSOR
   subscribeToTopic(
-    "tasmota/tele/tasmota_5FF8B2/SENSOR",
+    mqttTopics.haEnergyTopic,
     (topic: string, message: { toString(): string }) => {
       try {
         const data = JSON.parse(message.toString());
         energy.value = {
-          power: data.ENERGY.Power[0] ?? null,
-          sumImport: data.ENERGY.TodaySumImport ?? null,
-          sumExport: data.ENERGY.TodaySumExport ?? null,
+          power: getPath(data, mqttTopics.haEnergyFieldPower) ?? null,
+          sumImport: getPath(data, mqttTopics.haEnergyFieldImport) ?? null,
+          sumExport: getPath(data, mqttTopics.haEnergyFieldExport) ?? null,
         };
       } catch {
         // ignore
@@ -368,69 +371,65 @@ onMounted(() => {
     },
   );
 
-  // Kommer sensor: muh/sensors/87/json
   subscribeToTopic(
-    "muh/sensors/87/json",
+    mqttTopics.haKommerSensorTopic,
     (topic: string, message: { toString(): string }) => {
       try {
         const data = JSON.parse(message.toString());
-        kommer.value = { temp: data.T1 ?? null, humidity: data.H1 ?? null };
+        kommer.value = {
+          temp: getPath(data, mqttTopics.haKommerFieldTemp) ?? null,
+          humidity: getPath(data, mqttTopics.haKommerFieldHumidity) ?? null,
+        };
       } catch {
         // ignore
       }
     },
   );
 
-  // Kommer switch state: tasmota/tele/tasmota_BDC5E0/STATE
   subscribeToTopic(
-    "tasmota/tele/tasmota_BDC5E0/STATE",
+    mqttTopics.haKommerStateTopic,
     (topic: string, message: { toString(): string }) => {
       try {
         const data = JSON.parse(message.toString());
-        const power = data.POWER === "ON";
-
-        kommerPower.value = power; // MQTT truth
-        kommerPowerLocal.value = power; // sync UI
+        const power = getPath(data, mqttTopics.haKommerStateField) === "ON";
+        kommerPower.value = power;
+        kommerPowerLocal.value = power;
       } catch {
         // ignore
       }
     },
   );
 
-  // Brenner temp 1: muh/sensors/HZ_WW/DS18B20-3628FF/json
   subscribeToTopic(
-    "muh/sensors/HZ_WW/DS18B20-3628FF/json",
+    mqttTopics.haBrennerTemp1Topic,
     (topic: string, message: { toString(): string }) => {
       try {
         const data = JSON.parse(message.toString());
-        brenner.value.temp1 = data.DS18B20?.Temperature ?? null;
+        brenner.value.temp1 = getPath(data, mqttTopics.haBrennerFieldTemp) ?? null;
       } catch {
         // ignore
       }
     },
   );
 
-  // Brenner temp 2: muh/sensors/HZ_WW/DS18B20-1C16E1/json
   subscribeToTopic(
-    "muh/sensors/HZ_WW/DS18B20-1C16E1/json",
+    mqttTopics.haBrennerTemp2Topic,
     (topic: string, message: { toString(): string }) => {
       try {
         const data = JSON.parse(message.toString());
-        brenner.value.temp2 = data.DS18B20?.Temperature ?? null;
+        brenner.value.temp2 = getPath(data, mqttTopics.haBrennerFieldTemp) ?? null;
       } catch {
         // ignore
       }
     },
   );
 
-  // Brenner switch state: tasmota/tele/tasmota_A7EEA3/STATE
   subscribeToTopic(
-    "tasmota/tele/tasmota_A7EEA3/STATE",
+    mqttTopics.haBrennerStateTopic,
     (topic: string, message: { toString(): string }) => {
       try {
         const data = JSON.parse(message.toString());
-        const power = data.POWER === "ON";
-
+        const power = getPath(data, mqttTopics.haBrennerStateField) === "ON";
         brennerPower.value = power;
         brennerPowerLocal.value = power;
       } catch {
