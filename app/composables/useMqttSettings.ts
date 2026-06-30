@@ -45,6 +45,11 @@ export interface MqttSettings {
   wolSubscribeTopic: string
   wolWakeTopic: string
   wolShutdownTopic: string
+
+  // Alarm (ha.vue) topics
+  alarmStateSub: string
+  alarmAlertSub: string
+  alarmSetPub: string
 }
 
 export const defaultMqttSettings: MqttSettings = {
@@ -87,6 +92,10 @@ export const defaultMqttSettings: MqttSettings = {
   wolSubscribeTopic: 'muh/pc/#',
   wolWakeTopic: 'muh/wol',
   wolShutdownTopic: 'muh/poweroff',
+
+  alarmStateSub: 'muh/alarm/state',
+  alarmAlertSub: 'muh/alarm/alert',
+  alarmSetPub: 'muh/alarm/set',
 }
 
 export function useMqttSettings() {

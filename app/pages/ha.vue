@@ -202,6 +202,55 @@
             />
           </template>
         </v-list-item>
+
+        <v-divider />
+
+        <!-- Alarm -->
+        <v-list-item>
+          <v-list-item-title>Alarm</v-list-item-title>
+          <template #append>
+            <v-switch
+              :model-value="armed"
+              :disabled="!isConnected"
+              color="red"
+              hide-details
+              density="compact"
+              @update:model-value="toggleAlarm"
+            />
+          </template>
+        </v-list-item>
+
+        <!-- Alarm @Home -->
+        <v-list-item>
+          <v-list-item-title>Alarm @Home</v-list-item-title>
+          <template #append>
+            <v-switch
+              :model-value="atHome"
+              :disabled="!isConnected"
+              color="orange"
+              hide-details
+              density="compact"
+              @update:model-value="toggleAlarmAtHome"
+            />
+          </template>
+        </v-list-item>
+
+        <!-- Alarm alerts -->
+        <template v-if="alarmAlerts.length > 0">
+          <v-divider />
+          <v-list-item
+            v-for="alert in alarmAlerts.slice(0, 10)"
+            :key="alert.ts"
+            density="compact"
+          >
+            <v-list-item-title
+              class="d-flex justify-space-between align-center w-100"
+            >
+              <span>{{ alert.label || alert.device }}</span>
+              <span class="text-caption">{{ alert.time }}</span>
+            </v-list-item-title>
+          </v-list-item>
+        </template>
       </v-list>
     </v-card>
   </v-container>
@@ -209,6 +258,16 @@
 
 <script setup lang="ts">
 import { debugLog } from "../utils/logger";
+
+type AlarmState = 'ARM_AWAY' | 'ARM_HOME' | 'DISARM'
+
+interface AlarmAlert {
+  device: string
+  label: string
+  alarmState: AlarmState
+  time: string
+  ts: number
+}
 
 const {
   isConnected,
@@ -251,6 +310,12 @@ const kommerPower = ref(false);
 const brennerPower = ref(false);
 const kommerPowerLocal = ref(false);
 const brennerPowerLocal = ref(false);
+
+const alarmState = ref<AlarmState | null>(null);
+const alarmAlerts = ref<AlarmAlert[]>([]);
+
+const armed = computed(() => alarmState.value === 'ARM_AWAY' || alarmState.value === 'ARM_HOME');
+const atHome = computed(() => alarmState.value === 'ARM_HOME');
 
 const mqttConnectionStatusColor = computed(() => {
   return isConnected.value ? "green" : "red";
@@ -299,6 +364,22 @@ const toggleKommer = (val: boolean) => {
 
 const toggleBrenner = (val: boolean) => {
   publishMessage(mqttTopics.haBrennerCmndTopic, val ? "1" : "0");
+};
+
+const setAlarm = (state: AlarmState) => {
+  publishMessage(mqttTopics.alarmSetPub, state, { qos: 1, retain: false });
+};
+
+const toggleAlarm = (val: boolean | null) => {
+  setAlarm(val ? 'ARM_AWAY' : 'DISARM');
+};
+
+const toggleAlarmAtHome = (val: boolean | null) => {
+  if (val) {
+    setAlarm('ARM_HOME');
+  } else {
+    setAlarm(armed.value ? 'ARM_AWAY' : 'DISARM');
+  }
 };
 
 const refreshData = () => {
@@ -432,6 +513,28 @@ onMounted(() => {
         const power = getPath(data, mqttTopics.haBrennerStateField) === "ON";
         brennerPower.value = power;
         brennerPowerLocal.value = power;
+      } catch {
+        // ignore
+      }
+    },
+  );
+
+  subscribeToTopic(
+    mqttTopics.alarmStateSub,
+    (topic: string, message: { toString(): string }) => {
+      const payload = message.toString().trim() as AlarmState;
+      if (payload === 'ARM_AWAY' || payload === 'ARM_HOME' || payload === 'DISARM') {
+        alarmState.value = payload;
+      }
+    },
+  );
+
+  subscribeToTopic(
+    mqttTopics.alarmAlertSub,
+    (topic: string, message: { toString(): string }) => {
+      try {
+        const alert = JSON.parse(message.toString()) as AlarmAlert;
+        alarmAlerts.value = [alert, ...alarmAlerts.value].slice(0, 50);
       } catch {
         // ignore
       }

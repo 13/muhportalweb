@@ -362,6 +362,30 @@
                   hide-details
                 />
 
+                <!-- Alarm -->
+                <div class="text-caption text-medium-emphasis mt-2">Alarm</div>
+                <v-text-field
+                  v-model="settings.alarmStateSub"
+                  label="State (Subscribe)"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                />
+                <v-text-field
+                  v-model="settings.alarmAlertSub"
+                  label="Alert (Subscribe)"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                />
+                <v-text-field
+                  v-model="settings.alarmSetPub"
+                  label="Set (Publish)"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                />
+
               </div>
             </v-expansion-panel-text>
           </v-expansion-panel>

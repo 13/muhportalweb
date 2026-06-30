@@ -109,9 +109,9 @@ export function useSocketIO() {
     }
   }
 
-  const publishMessage = (topic: string, payload: string) => {
+  const publishMessage = (topic: string, payload: string, options?: { qos?: 0 | 1 | 2; retain?: boolean }) => {
     if (socket.value?.connected) {
-      socket.value.emit('mqtt-publish', { topic, payload })
+      socket.value.emit('mqtt-publish', { topic, payload, ...options })
     }
   }
 

@@ -25,6 +25,9 @@ A modern home automation frontend built with Nuxt 4, Vue 3, Vuetify 3, and MQTT
 
  * Display garage & doors status
  * Control garage & doors
+ * Home Assistant sensor dashboard (temperature, PV, energy, boiler)
+ * Control smart switches (Tasmota/Shelly)
+ * Arm/disarm alarm system (away & home modes) with live alert feed
  * List servers & Wake-on-LAN
  * Shutdown servers via MQTT
   
@@ -132,6 +135,17 @@ If you want to change the registry later, update the GitHub Actions workflow in 
 **Publish:** `muh/portal/RLY/cmnd`
 - Payload: `<portal>_<action>` (e.g., `G_T`, `HD_O`, `HDL_L`)
 - Actions: `T` (Toggle/Move), `O` (Open), `L` (Lock), `U` (Unlock)
+
+### Alarm
+
+**Subscribe:** `muh/alarm/state` *(retained)*
+- Payload: plain string — `ARM_AWAY`, `ARM_HOME`, or `DISARM`
+
+**Subscribe:** `muh/alarm/alert` *(live, not retained)*
+- Payload: `{"device":"sensor_01","label":"Front Door","alarmState":"ARM_AWAY","time":"09:23:16","ts":1700000000000}`
+
+**Publish:** `muh/alarm/set`
+- Payload: `ARM_AWAY`, `ARM_HOME`, or `DISARM`
 
 ### WOL (Wake-on-LAN)
 
