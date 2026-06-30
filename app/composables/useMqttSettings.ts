@@ -50,6 +50,13 @@ export interface MqttSettings {
   alarmStateSub: string
   alarmAlertSub: string
   alarmSetPub: string
+
+  // Away Sim (ha.vue) topics
+  awaySimStatusSub: string
+  awaySimManualSetPub: string
+  awaySimScheduleSetPub: string
+  awaySimScheduleStartSetPub: string
+  awaySimScheduleEndSetPub: string
 }
 
 export const defaultMqttSettings: MqttSettings = {
@@ -96,6 +103,12 @@ export const defaultMqttSettings: MqttSettings = {
   alarmStateSub: 'muh/alarm/state',
   alarmAlertSub: 'muh/alarm/alert',
   alarmSetPub: 'muh/alarm/set',
+
+  awaySimStatusSub: 'muh/awaysim/status',
+  awaySimManualSetPub: 'muh/awaysim/manual/set',
+  awaySimScheduleSetPub: 'muh/awaysim/schedule/set',
+  awaySimScheduleStartSetPub: 'muh/awaysim/schedule/start/set',
+  awaySimScheduleEndSetPub: 'muh/awaysim/schedule/end/set',
 }
 
 export function useMqttSettings() {

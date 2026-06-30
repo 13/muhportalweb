@@ -251,6 +251,67 @@
             </v-list-item-title>
           </v-list-item>
         </template>
+
+        <v-divider />
+
+        <!-- Away Sim -->
+        <v-list-item>
+          <v-list-item-title>Away Sim</v-list-item-title>
+          <template #append>
+            <v-switch
+              :model-value="awaySimManualActive"
+              :disabled="!isConnected"
+              color="teal"
+              hide-details
+              density="compact"
+              @update:model-value="toggleAwaySimManual"
+            />
+          </template>
+        </v-list-item>
+
+        <!-- Away Schedule -->
+        <v-list-item>
+          <v-list-item-title
+            class="d-flex justify-space-between align-center w-100"
+          >
+            <span>Away Schedule</span>
+            <span class="d-flex align-center ga-1 pr-4">
+              <v-text-field
+                v-model="awaySimScheduleStart"
+                type="time"
+                density="compact"
+                variant="underlined"
+                hide-details
+                class="time-input"
+                style="width: 70px"
+                :disabled="!isConnected"
+                @change="publishScheduleStart"
+              />
+              <span class="text-caption px-1">–</span>
+              <v-text-field
+                v-model="awaySimScheduleEnd"
+                type="time"
+                density="compact"
+                variant="underlined"
+                hide-details
+                class="time-input"
+                style="width: 70px"
+                :disabled="!isConnected"
+                @change="publishScheduleEnd"
+              />
+            </span>
+          </v-list-item-title>
+          <template #append>
+            <v-switch
+              :model-value="awaySimScheduleEnabled"
+              :disabled="!isConnected"
+              color="teal"
+              hide-details
+              density="compact"
+              @update:model-value="toggleAwaySimSchedule"
+            />
+          </template>
+        </v-list-item>
       </v-list>
     </v-card>
   </v-container>
@@ -267,6 +328,16 @@ interface AlarmAlert {
   alarmState: AlarmState
   time: string
   ts: number
+}
+
+interface AwaySimStatus {
+  active: boolean
+  manual_active: boolean
+  schedule_enabled: boolean
+  schedule_active: boolean
+  schedule_start: string
+  schedule_end: string
+  current_pool_light: string | null
 }
 
 const {
@@ -316,6 +387,11 @@ const alarmAlerts = ref<AlarmAlert[]>([]);
 
 const armed = computed(() => alarmState.value === 'ARM_AWAY' || alarmState.value === 'ARM_HOME');
 const atHome = computed(() => alarmState.value === 'ARM_HOME');
+
+const awaySimManualActive = ref(false);
+const awaySimScheduleEnabled = ref(false);
+const awaySimScheduleStart = ref('15:00');
+const awaySimScheduleEnd = ref('06:00');
 
 const mqttConnectionStatusColor = computed(() => {
   return isConnected.value ? "green" : "red";
@@ -380,6 +456,22 @@ const toggleAlarmAtHome = (val: boolean | null) => {
   } else {
     setAlarm(armed.value ? 'ARM_AWAY' : 'DISARM');
   }
+};
+
+const toggleAwaySimManual = (val: boolean | null) => {
+  publishMessage(mqttTopics.awaySimManualSetPub, val ? 'ON' : 'OFF');
+};
+
+const toggleAwaySimSchedule = (val: boolean | null) => {
+  publishMessage(mqttTopics.awaySimScheduleSetPub, val ? 'ON' : 'OFF');
+};
+
+const publishScheduleStart = () => {
+  publishMessage(mqttTopics.awaySimScheduleStartSetPub, awaySimScheduleStart.value);
+};
+
+const publishScheduleEnd = () => {
+  publishMessage(mqttTopics.awaySimScheduleEndSetPub, awaySimScheduleEnd.value);
 };
 
 const refreshData = () => {
@@ -540,5 +632,29 @@ onMounted(() => {
       }
     },
   );
+
+  subscribeToTopic(
+    mqttTopics.awaySimStatusSub,
+    (topic: string, message: { toString(): string }) => {
+      try {
+        const data = JSON.parse(message.toString()) as AwaySimStatus;
+        awaySimManualActive.value = data.manual_active;
+        awaySimScheduleEnabled.value = data.schedule_enabled;
+        awaySimScheduleStart.value = data.schedule_start;
+        awaySimScheduleEnd.value = data.schedule_end;
+      } catch {
+        // ignore
+      }
+    },
+  );
 });
 </script>
+
+<style scoped>
+.time-input :deep(.v-field__input) {
+  font-size: 0.75rem;
+  min-height: unset;
+  padding-top: 0;
+  padding-bottom: 2px;
+}
+</style>

@@ -386,6 +386,44 @@
                   hide-details
                 />
 
+                <!-- Away Sim -->
+                <div class="text-caption text-medium-emphasis mt-2">Away Sim</div>
+                <v-text-field
+                  v-model="settings.awaySimStatusSub"
+                  label="Status (Subscribe)"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                />
+                <v-text-field
+                  v-model="settings.awaySimManualSetPub"
+                  label="Manual Set (Publish)"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                />
+                <v-text-field
+                  v-model="settings.awaySimScheduleSetPub"
+                  label="Schedule Set (Publish)"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                />
+                <v-text-field
+                  v-model="settings.awaySimScheduleStartSetPub"
+                  label="Schedule Start Set (Publish)"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                />
+                <v-text-field
+                  v-model="settings.awaySimScheduleEndSetPub"
+                  label="Schedule End Set (Publish)"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                />
+
               </div>
             </v-expansion-panel-text>
           </v-expansion-panel>
