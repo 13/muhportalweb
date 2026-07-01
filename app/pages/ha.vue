@@ -212,7 +212,7 @@
             <v-switch
               :model-value="armed"
               :disabled="!isConnected"
-              color="red"
+              color="green"
               hide-details
               density="compact"
               @update:model-value="toggleAlarm"
@@ -227,7 +227,7 @@
             <v-switch
               :model-value="atHome"
               :disabled="!isConnected"
-              color="orange"
+              color="green"
               hide-details
               density="compact"
               @update:model-value="toggleAlarmAtHome"
@@ -261,7 +261,7 @@
             <v-switch
               :model-value="awaySimManualActive"
               :disabled="!isConnected"
-              color="teal"
+              color="green"
               hide-details
               density="compact"
               @update:model-value="toggleAwaySimManual"
@@ -305,7 +305,7 @@
             <v-switch
               :model-value="awaySimScheduleEnabled"
               :disabled="!isConnected"
-              color="teal"
+              color="green"
               hide-details
               density="compact"
               @update:model-value="toggleAwaySimSchedule"
@@ -447,22 +447,24 @@ const setAlarm = (state: AlarmState) => {
 };
 
 const toggleAlarm = (val: boolean | null) => {
-  setAlarm(val ? 'ARM_AWAY' : 'DISARM');
+  const state = val ? 'ARM_AWAY' : 'DISARM';
+  alarmState.value = state;
+  setAlarm(state);
 };
 
 const toggleAlarmAtHome = (val: boolean | null) => {
-  if (val) {
-    setAlarm('ARM_HOME');
-  } else {
-    setAlarm(armed.value ? 'ARM_AWAY' : 'DISARM');
-  }
+  const state = val ? 'ARM_HOME' : (armed.value ? 'ARM_AWAY' : 'DISARM');
+  alarmState.value = state;
+  setAlarm(state);
 };
 
 const toggleAwaySimManual = (val: boolean | null) => {
+  awaySimManualActive.value = !!val;
   publishMessage(mqttTopics.awaySimManualSetPub, val ? 'ON' : 'OFF');
 };
 
 const toggleAwaySimSchedule = (val: boolean | null) => {
+  awaySimScheduleEnabled.value = !!val;
   publishMessage(mqttTopics.awaySimScheduleSetPub, val ? 'ON' : 'OFF');
 };
 
