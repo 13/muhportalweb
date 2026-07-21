@@ -1,14 +1,12 @@
 import { createVuetify } from 'vuetify'
-import * as components from 'vuetify/components'
-import * as directives from 'vuetify/directives'
 import '@mdi/font/css/materialdesignicons.css'
+// @ts-expect-error css side-effect import ships no type declarations
 import 'vuetify/styles'
 import colors from 'vuetify/util/colors'
 
+// Components and directives are auto-imported per-use by vite-plugin-vuetify
 export default defineNuxtPlugin((nuxtApp) => {
   const vuetify = createVuetify({
-    components,
-    directives,
     theme: {
       defaultTheme: 'light',
       themes: {

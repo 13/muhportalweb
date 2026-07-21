@@ -1,7 +1,15 @@
 services:
   muhportalweb:
     build: .
+    # Or run the published image instead of building locally:
+    # image: ghcr.io/13/muhportalweb:latest
     container_name: muhportalweb
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     environment:
       PUID: ${PUID}
       PGID: ${PGID}
@@ -10,6 +18,10 @@ services:
       MQTT_BROKER_URL: ${MQTT_BROKER_URL:-mqtt://192.168.22.5:1883}
       # CORS Configuration
       CORS_ORIGINS: ${CORS_ORIGINS:-}
+      # Allow browser clients to repoint the server's MQTT connection (off by default)
+      ALLOW_MQTT_RECONFIGURE: ${ALLOW_MQTT_RECONFIGURE:-false}
+      # Shared token required on the Socket.IO handshake (empty = auth disabled)
+      AUTH_TOKEN: ${AUTH_TOKEN:-}
       # Nuxt Configuration
       NUXT_HOST: ${NUXT_HOST:-0.0.0.0}
       NUXT_PORT: ${NUXT_PORT:-3000}

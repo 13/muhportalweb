@@ -1,3 +1,19 @@
 node_modules
 npm-debug.log
+*.log
 .env
+.env.*
+.git
+.github
+.nuxt
+.output
+.data
+.cache
+dist
+test
+assets
+README.md
+
+# TLS certificates & private keys - never bake into images
+cert/
+key/

@@ -1,6 +1,6 @@
 <template>
   <v-app-bar :elevation="0">
-    <template v-slot:prepend>
+    <template #prepend>
       <v-app-bar-nav-icon :color="mqttConnectionStatusColor">
         <v-icon>mdi-lock</v-icon>
       </v-app-bar-nav-icon>
@@ -8,7 +8,7 @@
 
     <v-app-bar-title class="text-h5">Portal</v-app-bar-title>
 
-    <template v-slot:append>
+    <template #append>
       <v-btn icon variant="text" @click="refreshData">
         <v-icon color="primary">mdi-refresh</v-icon>
       </v-btn>
@@ -369,6 +369,7 @@
 
 <script setup lang="ts">
 import { debugLog } from "../utils/logger";
+import { parseJson } from "#shared/utils/mqtt";
 
 interface PortalState {
   state: number;
@@ -384,7 +385,7 @@ interface Portals {
 }
 
 const {
-  isConnected,
+  statusColor: mqttConnectionStatusColor,
   connectToBroker,
   reconnectToBroker,
   subscribeToTopic,
@@ -400,11 +401,6 @@ const {
 const portalStates = reactive<Portals>({});
 const isNotificationVisible = ref(false);
 const notificationMessage = ref("");
-
-// Connection status color: green=connected, red=disconnected
-const mqttConnectionStatusColor = computed(() => {
-  return isConnected.value ? "green" : "red";
-});
 
 // Dialog visibility states
 const dialogVisibility = reactive({
@@ -466,19 +462,16 @@ onMounted(() => {
   connectToBroker();
 
   // Subscribe to portal state updates (G, GD, GDL, HD, HDL)
-  subscribeToTopic(mqttTopics.portalSubscribeTopic, (topic: string, message: Buffer) => {
+  subscribeToTopic(mqttTopics.portalSubscribeTopic, (topic: string, message: { toString(): string }) => {
     const topicMatch = topic.match(/muh\/portal\/([A-Z]+)\/json/);
     if (topicMatch) {
-      try {
-        const portalCode = topicMatch[1] as keyof Portals;
-        const stateData = JSON.parse(message.toString()) as PortalState;
-        portalStates[portalCode] = {
-          state: stateData.state,
-          time: stateData.time,
-        };
-      } catch {
-        // Invalid JSON payload - ignore
-      }
+      const portalCode = topicMatch[1] as keyof Portals;
+      const stateData = parseJson<PortalState>(message.toString());
+      if (stateData === null) return;
+      portalStates[portalCode] = {
+        state: stateData.state,
+        time: stateData.time,
+      };
     }
   });
 });

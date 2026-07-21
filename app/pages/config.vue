@@ -1,6 +1,6 @@
 <template>
   <v-app-bar :elevation="1">
-    <template v-slot:prepend>
+    <template #prepend>
       <v-app-bar-nav-icon>
         <v-icon color="primary">mdi-cog</v-icon>
       </v-app-bar-nav-icon>
@@ -8,7 +8,7 @@
 
     <v-app-bar-title class="text-h5">Einstellungen</v-app-bar-title>
 
-    <template v-slot:append>
+    <template #append>
       <v-btn icon variant="text" to="/">
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
@@ -44,6 +44,12 @@
           MQTT Verbindung
         </v-card-title>
         <v-card-text class="d-flex flex-column ga-2 pt-3">
+          <v-alert
+            v-if="authFailed"
+            type="error"
+            density="compact"
+            text="Authentifizierung fehlgeschlagen – Auth Token prüfen"
+          />
           <v-text-field
             v-model="settings.mqttServer"
             label="Server URL"
@@ -69,6 +75,17 @@
             :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
             @click:append-inner="showPassword = !showPassword"
           />
+          <v-text-field
+            v-model="authTokenLocal"
+            :type="showAuthToken ? 'text' : 'password'"
+            label="Auth Token (Server-Zugriff)"
+            hint="Nur nötig wenn AUTH_TOKEN auf dem Server gesetzt ist"
+            persistent-hint
+            density="compact"
+            variant="outlined"
+            :append-inner-icon="showAuthToken ? 'mdi-eye-off' : 'mdi-eye'"
+            @click:append-inner="showAuthToken = !showAuthToken"
+          />
         </v-card-text>
         <v-card-actions class="pa-4 pt-0">
           <v-spacer />
@@ -87,376 +104,43 @@
         </v-card-title>
         <v-expansion-panels variant="accordion" flat class="mt-2">
 
-          <!-- Portal Topics -->
-          <v-expansion-panel>
+          <v-expansion-panel v-for="panel in topicPanels" :key="panel.title">
             <v-expansion-panel-title>
-              <v-icon start size="small">mdi-lock</v-icon>
-              Portal
+              <v-icon start size="small">{{ panel.icon }}</v-icon>
+              {{ panel.title }}
             </v-expansion-panel-title>
             <v-expansion-panel-text>
               <div class="d-flex flex-column ga-2">
-                <v-text-field
-                  v-model="settings.portalSubscribeTopic"
-                  label="Subscribe (Status)"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-text-field
-                  v-model="settings.portalPublishTopic"
-                  label="Publish (Befehle)"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-              </div>
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-
-          <!-- HA Topics -->
-          <v-expansion-panel>
-            <v-expansion-panel-title>
-              <v-icon start size="small">mdi-lightbulb</v-icon>
-              HA
-            </v-expansion-panel-title>
-            <v-expansion-panel-text>
-              <div class="d-flex flex-column ga-2">
-
-                <!-- Temperatur -->
-                <div class="text-caption text-medium-emphasis">Temperatur</div>
-                <v-text-field
-                  v-model="settings.haTemperaturTopic"
-                  label="Topic"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-row no-gutters class="ga-2">
-                  <v-col>
+                <template v-for="(group, gi) in panel.groups" :key="gi">
+                  <div
+                    v-if="group.caption"
+                    class="text-caption text-medium-emphasis"
+                    :class="{ 'mt-2': gi > 0 }"
+                  >
+                    {{ group.caption }}
+                  </div>
+                  <template v-for="(row, ri) in group.rows" :key="ri">
+                    <v-row v-if="Array.isArray(row)" no-gutters class="ga-2">
+                      <v-col v-for="field in row" :key="field.key">
+                        <v-text-field
+                          v-model="settings[field.key]"
+                          :label="field.label"
+                          density="compact"
+                          variant="outlined"
+                          hide-details
+                        />
+                      </v-col>
+                    </v-row>
                     <v-text-field
-                      v-model="settings.haTemperaturFieldTemp"
-                      label="Feld Temperatur"
+                      v-else
+                      v-model="settings[row.key]"
+                      :label="row.label"
                       density="compact"
                       variant="outlined"
                       hide-details
                     />
-                  </v-col>
-                  <v-col>
-                    <v-text-field
-                      v-model="settings.haTemperaturFieldHumidity"
-                      label="Feld Feuchtigkeit"
-                      density="compact"
-                      variant="outlined"
-                      hide-details
-                    />
-                  </v-col>
-                </v-row>
-
-                <!-- PV -->
-                <div class="text-caption text-medium-emphasis mt-2">PV</div>
-                <v-text-field
-                  v-model="settings.haPvTopic"
-                  label="Topic PV Daten"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-row no-gutters class="ga-2">
-                  <v-col>
-                    <v-text-field
-                      v-model="settings.haPvFieldE1"
-                      label="Feld E1"
-                      density="compact"
-                      variant="outlined"
-                      hide-details
-                    />
-                  </v-col>
-                  <v-col>
-                    <v-text-field
-                      v-model="settings.haPvFieldE2"
-                      label="Feld E2"
-                      density="compact"
-                      variant="outlined"
-                      hide-details
-                    />
-                  </v-col>
-                  <v-col>
-                    <v-text-field
-                      v-model="settings.haPvFieldP1"
-                      label="Feld P1"
-                      density="compact"
-                      variant="outlined"
-                      hide-details
-                    />
-                  </v-col>
-                  <v-col>
-                    <v-text-field
-                      v-model="settings.haPvFieldP2"
-                      label="Feld P2"
-                      density="compact"
-                      variant="outlined"
-                      hide-details
-                    />
-                  </v-col>
-                </v-row>
-                <v-text-field
-                  v-model="settings.haPvShellyTopic"
-                  label="Topic PV Shelly"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-row no-gutters class="ga-2">
-                  <v-col>
-                    <v-text-field
-                      v-model="settings.haPvShellyFieldPower"
-                      label="Feld Power"
-                      density="compact"
-                      variant="outlined"
-                      hide-details
-                    />
-                  </v-col>
-                  <v-col>
-                    <v-text-field
-                      v-model="settings.haPvShellyFieldToday"
-                      label="Feld Today"
-                      density="compact"
-                      variant="outlined"
-                      hide-details
-                    />
-                  </v-col>
-                </v-row>
-
-                <!-- Verbrauch -->
-                <div class="text-caption text-medium-emphasis mt-2">Verbrauch</div>
-                <v-text-field
-                  v-model="settings.haEnergyTopic"
-                  label="Topic 3EM"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-row no-gutters class="ga-2">
-                  <v-col>
-                    <v-text-field
-                      v-model="settings.haEnergyFieldPower"
-                      label="Feld Power"
-                      density="compact"
-                      variant="outlined"
-                      hide-details
-                    />
-                  </v-col>
-                  <v-col>
-                    <v-text-field
-                      v-model="settings.haEnergyFieldImport"
-                      label="Feld Import"
-                      density="compact"
-                      variant="outlined"
-                      hide-details
-                    />
-                  </v-col>
-                  <v-col>
-                    <v-text-field
-                      v-model="settings.haEnergyFieldExport"
-                      label="Feld Export"
-                      density="compact"
-                      variant="outlined"
-                      hide-details
-                    />
-                  </v-col>
-                </v-row>
-
-                <!-- Kommer -->
-                <div class="text-caption text-medium-emphasis mt-2">Kommer</div>
-                <v-text-field
-                  v-model="settings.haKommerSensorTopic"
-                  label="Topic Sensor"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-row no-gutters class="ga-2">
-                  <v-col>
-                    <v-text-field
-                      v-model="settings.haKommerFieldTemp"
-                      label="Feld Temperatur"
-                      density="compact"
-                      variant="outlined"
-                      hide-details
-                    />
-                  </v-col>
-                  <v-col>
-                    <v-text-field
-                      v-model="settings.haKommerFieldHumidity"
-                      label="Feld Feuchtigkeit"
-                      density="compact"
-                      variant="outlined"
-                      hide-details
-                    />
-                  </v-col>
-                </v-row>
-                <v-text-field
-                  v-model="settings.haKommerStateTopic"
-                  label="Topic Status (Subscribe)"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-text-field
-                  v-model="settings.haKommerStateField"
-                  label="Feld Status"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-text-field
-                  v-model="settings.haKommerCmndTopic"
-                  label="Topic Schalten (Publish)"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-
-                <!-- Brenner -->
-                <div class="text-caption text-medium-emphasis mt-2">Brenner</div>
-                <v-text-field
-                  v-model="settings.haBrennerTemp1Topic"
-                  label="Topic Temp 1"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-text-field
-                  v-model="settings.haBrennerTemp2Topic"
-                  label="Topic Temp 2"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-text-field
-                  v-model="settings.haBrennerFieldTemp"
-                  label="Feld Temperatur (beide Topics)"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-text-field
-                  v-model="settings.haBrennerStateTopic"
-                  label="Topic Status (Subscribe)"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-text-field
-                  v-model="settings.haBrennerStateField"
-                  label="Feld Status"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-text-field
-                  v-model="settings.haBrennerCmndTopic"
-                  label="Topic Schalten (Publish)"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-
-                <!-- Alarm -->
-                <div class="text-caption text-medium-emphasis mt-2">Alarm</div>
-                <v-text-field
-                  v-model="settings.alarmStateSub"
-                  label="State (Subscribe)"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-text-field
-                  v-model="settings.alarmAlertSub"
-                  label="Alert (Subscribe)"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-text-field
-                  v-model="settings.alarmSetPub"
-                  label="Set (Publish)"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-
-                <!-- Away Sim -->
-                <div class="text-caption text-medium-emphasis mt-2">Away Sim</div>
-                <v-text-field
-                  v-model="settings.awaySimStatusSub"
-                  label="Status (Subscribe)"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-text-field
-                  v-model="settings.awaySimManualSetPub"
-                  label="Manual Set (Publish)"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-text-field
-                  v-model="settings.awaySimScheduleSetPub"
-                  label="Schedule Set (Publish)"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-text-field
-                  v-model="settings.awaySimScheduleStartSetPub"
-                  label="Schedule Start Set (Publish)"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-text-field
-                  v-model="settings.awaySimScheduleEndSetPub"
-                  label="Schedule End Set (Publish)"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-
-              </div>
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-
-          <!-- WOL Topics -->
-          <v-expansion-panel>
-            <v-expansion-panel-title>
-              <v-icon start size="small">mdi-lan</v-icon>
-              WOL
-            </v-expansion-panel-title>
-            <v-expansion-panel-text>
-              <div class="d-flex flex-column ga-2">
-                <v-text-field
-                  v-model="settings.wolSubscribeTopic"
-                  label="Hosts Status (Subscribe)"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-text-field
-                  v-model="settings.wolWakeTopic"
-                  label="Wake-on-LAN (Publish)"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
-                <v-text-field
-                  v-model="settings.wolShutdownTopic"
-                  label="Shutdown (Publish)"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                />
+                  </template>
+                </template>
               </div>
             </v-expansion-panel-text>
           </v-expansion-panel>
@@ -510,6 +194,8 @@
 
 <script setup lang="ts">
 import pkg from "../../package.json";
+import { getAuthToken, setAuthToken } from "../composables/useSocketIO";
+import type { MqttSettings } from "../composables/useMqttSettings";
 
 const appVersion = pkg.version;
 const buildDate = useRuntimeConfig().public.buildDate as string;
@@ -526,6 +212,7 @@ const setDarkMode = inject<(enableDarkMode: boolean) => void>("setDarkMode");
 
 onMounted(() => {
   isDarkModeEnabled.value = localStorage.getItem("darkMode") === "true";
+  authTokenLocal.value = getAuthToken();
 });
 
 const onDarkModeToggle = () => {
@@ -535,12 +222,140 @@ const onDarkModeToggle = () => {
 
 // MQTT Settings
 const { loadSettings, saveSettings, defaultMqttSettings } = useMqttSettings();
-const { configureMqtt, connectToBroker } = useSocketIO();
+const { configureMqtt, connectToBroker, reconnectToBroker, authFailed } = useSocketIO();
 
 const settings = reactive(loadSettings());
 const showPassword = ref(false);
+const showAuthToken = ref(false);
+const authTokenLocal = ref("");
 const snackbarVisible = ref(false);
 const snackbarMessage = ref("");
+
+// Declarative form definition - add a topic here and in MqttSettings, done
+interface TopicField {
+  key: keyof MqttSettings;
+  label: string;
+}
+type TopicRow = TopicField | TopicField[];
+interface TopicPanel {
+  title: string;
+  icon: string;
+  groups: { caption?: string; rows: TopicRow[] }[];
+}
+
+const topicPanels: TopicPanel[] = [
+  {
+    title: "Portal",
+    icon: "mdi-lock",
+    groups: [
+      {
+        rows: [
+          { key: "portalSubscribeTopic", label: "Subscribe (Status)" },
+          { key: "portalPublishTopic", label: "Publish (Befehle)" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "HA",
+    icon: "mdi-lightbulb",
+    groups: [
+      {
+        caption: "Temperatur",
+        rows: [
+          { key: "haTemperaturTopic", label: "Topic" },
+          [
+            { key: "haTemperaturFieldTemp", label: "Feld Temperatur" },
+            { key: "haTemperaturFieldHumidity", label: "Feld Feuchtigkeit" },
+          ],
+        ],
+      },
+      {
+        caption: "PV",
+        rows: [
+          { key: "haPvTopic", label: "Topic PV Daten" },
+          [
+            { key: "haPvFieldE1", label: "Feld E1" },
+            { key: "haPvFieldE2", label: "Feld E2" },
+            { key: "haPvFieldP1", label: "Feld P1" },
+            { key: "haPvFieldP2", label: "Feld P2" },
+          ],
+          { key: "haPvShellyTopic", label: "Topic PV Shelly" },
+          [
+            { key: "haPvShellyFieldPower", label: "Feld Power" },
+            { key: "haPvShellyFieldToday", label: "Feld Today" },
+          ],
+        ],
+      },
+      {
+        caption: "Verbrauch",
+        rows: [
+          { key: "haEnergyTopic", label: "Topic 3EM" },
+          [
+            { key: "haEnergyFieldPower", label: "Feld Power" },
+            { key: "haEnergyFieldImport", label: "Feld Import" },
+            { key: "haEnergyFieldExport", label: "Feld Export" },
+          ],
+        ],
+      },
+      {
+        caption: "Kommer",
+        rows: [
+          { key: "haKommerSensorTopic", label: "Topic Sensor" },
+          [
+            { key: "haKommerFieldTemp", label: "Feld Temperatur" },
+            { key: "haKommerFieldHumidity", label: "Feld Feuchtigkeit" },
+          ],
+          { key: "haKommerStateTopic", label: "Topic Status (Subscribe)" },
+          { key: "haKommerStateField", label: "Feld Status" },
+          { key: "haKommerCmndTopic", label: "Topic Schalten (Publish)" },
+        ],
+      },
+      {
+        caption: "Brenner",
+        rows: [
+          { key: "haBrennerTemp1Topic", label: "Topic Temp 1" },
+          { key: "haBrennerTemp2Topic", label: "Topic Temp 2" },
+          { key: "haBrennerFieldTemp", label: "Feld Temperatur (beide Topics)" },
+          { key: "haBrennerStateTopic", label: "Topic Status (Subscribe)" },
+          { key: "haBrennerStateField", label: "Feld Status" },
+          { key: "haBrennerCmndTopic", label: "Topic Schalten (Publish)" },
+        ],
+      },
+      {
+        caption: "Alarm",
+        rows: [
+          { key: "alarmStateSub", label: "State (Subscribe)" },
+          { key: "alarmAlertSub", label: "Alert (Subscribe)" },
+          { key: "alarmSetPub", label: "Set (Publish)" },
+        ],
+      },
+      {
+        caption: "Away Sim",
+        rows: [
+          { key: "awaySimStatusSub", label: "Status (Subscribe)" },
+          { key: "awaySimManualSetPub", label: "Manual Set (Publish)" },
+          { key: "awaySimScheduleSetPub", label: "Schedule Set (Publish)" },
+          { key: "awaySimScheduleStartSetPub", label: "Schedule Start Set (Publish)" },
+          { key: "awaySimScheduleEndSetPub", label: "Schedule End Set (Publish)" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "WOL",
+    icon: "mdi-lan",
+    groups: [
+      {
+        rows: [
+          { key: "wolSubscribeTopic", label: "Hosts Status (Subscribe)" },
+          { key: "wolWakeTopic", label: "Wake-on-LAN (Publish)" },
+          { key: "wolShutdownTopic", label: "Shutdown (Publish)" },
+        ],
+      },
+    ],
+  },
+];
 
 onMounted(() => {
   connectToBroker();
@@ -553,7 +368,13 @@ const showSnackbar = (msg: string) => {
 
 const saveMqttConnection = () => {
   saveSettings({ ...settings });
+  const tokenChanged = authTokenLocal.value !== getAuthToken();
+  setAuthToken(authTokenLocal.value);
   configureMqtt(settings.mqttServer, settings.mqttUsername || undefined, settings.mqttPassword || undefined);
+  if (tokenChanged || authFailed.value) {
+    // New token only applies on a fresh Socket.IO handshake
+    reconnectToBroker();
+  }
   showSnackbar("MQTT Verbindung gespeichert");
 };
 

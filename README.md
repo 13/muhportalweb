@@ -85,12 +85,28 @@ MQTT_BROKER_URL=mqtt://192.168.22.5:1883
 
 # CORS Configuration for Socket.IO (comma-separated list of allowed origins)
 # Use '*' for all origins (not recommended in production) or specific URLs
+# Note: with '*', credentials are disabled on the Socket.IO CORS handshake
 CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
+
+# Allow browser clients to reconfigure the server's MQTT broker connection
+# via the config page (affects ALL connected clients). Disabled by default.
+ALLOW_MQTT_RECONFIGURE=false
+
+# Shared token required on the Socket.IO handshake (empty = auth disabled).
+# Clients enter the same token on the config page under "Auth Token".
+AUTH_TOKEN=
 
 # Nuxt server configuration
 NUXT_HOST=0.0.0.0
 NUXT_PORT=3000
 ```
+
+> **Security note:** without `AUTH_TOKEN` the app has no authentication -
+> anyone who can reach the web port can control doors, switches, and the
+> alarm. Set `AUTH_TOKEN`, and for anything beyond a trusted LAN put an
+> authenticating reverse proxy (e.g. Caddy basic auth, Authelia) or a VPN
+> (e.g. Tailscale) in front. The token protects the MQTT bridge, not the
+> static pages.
 
 ### Docker Configuration
 

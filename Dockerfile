@@ -1,31 +1,28 @@
-#FROM node:19
-FROM node:alpine
+FROM node:22-alpine AS build
 
-# Create app directory
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
-# where available (npm@5+)
 COPY package*.json ./
+RUN npm ci
 
-RUN npm install
-# If you are building your code for production
-# RUN npm ci --omit=dev
-
-# Bundle app source
 COPY . .
-
-# Build the Nuxt application
 RUN npm run build
 
-EXPOSE 3000
+# Runtime image: Nuxt's .output is self-contained - no node_modules, no source
+FROM node:22-alpine
 
-# Runtime environment variables with defaults
-# These can be overridden when running the container via docker-compose or docker run
+WORKDIR /app
+
+COPY --from=build /app/.output ./.output
+
+ENV NODE_ENV=production
 ENV NUXT_HOST=0.0.0.0
 ENV NUXT_PORT=3000
 ENV MQTT_BROKER_URL=mqtt://192.168.22.5:1883
 ENV CORS_ORIGINS=
+
+EXPOSE 3000
+
+USER node
 
 CMD [ "node", ".output/server/index.mjs" ]

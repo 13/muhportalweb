@@ -1,7 +1,8 @@
-import { io, Socket } from 'socket.io-client'
+import type { Socket } from 'socket.io-client';
+import { io } from 'socket.io-client'
+import { topicMatchesPattern } from '#shared/utils/mqtt'
 import { debugLog } from '../utils/logger'
 
-// Store subscriptions for reconnection
 interface SocketSubscription {
   topic: string
   messageHandler: (topic: string, message: BufferLike) => void
@@ -12,131 +13,173 @@ interface BufferLike {
   toString(): string
 }
 
-// Helper function to create a Buffer-like object from a string
 function createBufferLike(str: string): BufferLike {
   return {
     toString() {
       return str
-    }
+    },
   }
 }
 
-// Helper function to check if topic matches wildcard pattern
-function topicMatchesPattern(pattern: string, topic: string): boolean {
-  const wildcardPattern = pattern.replace(/\+/g, '[^/]+').replace(/#/g, '.*')
-  return new RegExp(`^${wildcardPattern}$`).test(topic)
+const AUTH_TOKEN_KEY = 'muhportal:auth-token'
+
+export function getAuthToken(): string {
+  if (!import.meta.client) return ''
+  return localStorage.getItem(AUTH_TOKEN_KEY) ?? ''
+}
+
+export function setAuthToken(token: string) {
+  if (!import.meta.client) return
+  if (token) {
+    localStorage.setItem(AUTH_TOKEN_KEY, token)
+  } else {
+    localStorage.removeItem(AUTH_TOKEN_KEY)
+  }
+}
+
+// Module-scoped singleton: one Socket.IO connection shared by all pages.
+// Navigating between pages only swaps handler registrations - the socket
+// (and the server-side MQTT subscriptions) survive.
+let socket: Socket | null = null
+const isConnected = ref(false)
+const brokerConnected = ref(true)
+const authFailed = ref(false)
+const activeSubscriptions: SocketSubscription[] = []
+
+// red: no socket, orange: socket up but MQTT broker down, green: all good
+const statusColor = computed(() => {
+  if (!isConnected.value) return 'red'
+  if (!brokerConnected.value) return 'orange'
+  return 'green'
+})
+
+function createSocket(): Socket {
+  const token = getAuthToken()
+  return io(token ? { auth: { token } } : {})
+}
+
+function initializeSocketEventHandlers(socketInstance: Socket) {
+  socketInstance.on('connect', () => {
+    isConnected.value = true
+    debugLog.log('Socket.IO: Connected to server')
+
+    // Re-subscribe to all topics after (re)connect
+    activeSubscriptions.forEach((subscription) => {
+      socketInstance.emit('mqtt-subscribe', { topic: subscription.topic })
+    })
+  })
+
+  socketInstance.on('disconnect', () => {
+    isConnected.value = false
+    debugLog.log('Socket.IO: Disconnected from server')
+  })
+
+  socketInstance.on('mqtt-status', (data: { connected: boolean }) => {
+    brokerConnected.value = data.connected
+  })
+
+  socketInstance.on('mqtt-message', (data: { topic: string; message: string }) => {
+    debugLog.log('Socket.IO: Received MQTT message:', data.topic, data.message)
+    const messageBuffer = createBufferLike(data.message)
+
+    activeSubscriptions.forEach((subscription) => {
+      if (topicMatchesPattern(subscription.topic, data.topic)) {
+        subscription.messageHandler(data.topic, messageBuffer)
+      }
+    })
+  })
+
+  socketInstance.on('mqtt-error', (data: { error: string }) => {
+    debugLog.error('Socket.IO: MQTT error:', data.error)
+  })
+
+  socketInstance.on('connect_error', (err) => {
+    debugLog.error('Socket.IO: Connection error:', err)
+    if (err.message === 'unauthorized') {
+      authFailed.value = true
+      // Wrong/missing token - stop hammering the server until reconfigured
+      socketInstance.disconnect()
+    }
+  })
+}
+
+function removeSubscriptions(subs: SocketSubscription[]) {
+  subs.forEach((sub) => {
+    const index = activeSubscriptions.indexOf(sub)
+    if (index !== -1) activeSubscriptions.splice(index, 1)
+  })
 }
 
 export function useSocketIO() {
-  const socket = ref<Socket | null>(null)
-  const isConnected = ref(false)
-  const activeSubscriptions = ref<SocketSubscription[]>([])
-
-  const initializeSocketEventHandlers = (socketInstance: Socket) => {
-    socketInstance.on('connect', () => {
-      isConnected.value = true
-      debugLog.log('Socket.IO: Connected to server')
-      
-      // Re-subscribe to all topics after reconnect
-      activeSubscriptions.value.forEach((subscription) => {
-        socketInstance.emit('mqtt-subscribe', { topic: subscription.topic })
-      })
-    })
-
-    socketInstance.on('disconnect', () => {
-      isConnected.value = false
-      debugLog.log('Socket.IO: Disconnected from server')
-    })
-
-    socketInstance.on('mqtt-message', (data: { topic: string; message: string }) => {
-      debugLog.log('Socket.IO: Received MQTT message:', data.topic, data.message)
-      // Convert message string to Buffer-like object for compatibility with existing code
-      const messageBuffer = createBufferLike(data.message)
-      
-      activeSubscriptions.value.forEach((subscription) => {
-        // Check if the topic matches (supports wildcards)
-        if (topicMatchesPattern(subscription.topic, data.topic)) {
-          debugLog.log('Socket.IO: Forwarding message to handler for topic:', subscription.topic)
-          subscription.messageHandler(data.topic, messageBuffer)
-        }
-      })
-    })
-
-    socketInstance.on('mqtt-error', (data: { error: string }) => {
-      debugLog.error('Socket.IO: MQTT error:', data.error)
-    })
-
-    socketInstance.on('connect_error', (err) => {
-      debugLog.error('Socket.IO: Connection error:', err)
-    })
-  }
+  // Subscriptions registered by this component instance, cleaned up on unmount
+  const instanceSubscriptions: SocketSubscription[] = []
 
   const connectToBroker = () => {
-    if (import.meta.client && !socket.value) {
+    if (import.meta.client && !socket) {
       // Connect to Socket.IO server (same host as Nuxt app)
-      socket.value = io()
-      initializeSocketEventHandlers(socket.value)
+      socket = createSocket()
+      initializeSocketEventHandlers(socket)
     }
-    return socket.value
+    return socket
   }
 
   const reconnectToBroker = () => {
     if (import.meta.client) {
-      // Disconnect existing socket
-      if (socket.value) {
-        socket.value.disconnect()
-        socket.value = null
+      if (socket) {
+        socket.disconnect()
+        socket = null
       }
-      // Create new connection
-      socket.value = io()
-      initializeSocketEventHandlers(socket.value)
+      authFailed.value = false
+      socket = createSocket()
+      initializeSocketEventHandlers(socket)
     }
   }
 
   const subscribeToTopic = (topic: string, messageHandler: (topic: string, message: BufferLike) => void) => {
-    // Store subscription for reconnection
-    const existingSubscription = activeSubscriptions.value.find((sub) => sub.topic === topic)
-    if (!existingSubscription) {
-      activeSubscriptions.value.push({ topic, messageHandler })
-      debugLog.log('Socket.IO: Added subscription for topic:', topic)
-    }
+    const subscription: SocketSubscription = { topic, messageHandler }
+    instanceSubscriptions.push(subscription)
+    activeSubscriptions.push(subscription)
+    debugLog.log('Socket.IO: Added subscription for topic:', topic)
 
-    if (socket.value?.connected) {
-      debugLog.log('Socket.IO: Socket connected, sending subscription for:', topic)
-      socket.value.emit('mqtt-subscribe', { topic })
+    if (socket?.connected) {
+      socket.emit('mqtt-subscribe', { topic })
     } else {
       debugLog.log('Socket.IO: Socket not connected yet, subscription will be sent on connect for:', topic)
     }
   }
 
   const publishMessage = (topic: string, payload: string, options?: { qos?: 0 | 1 | 2; retain?: boolean }) => {
-    if (socket.value?.connected) {
-      socket.value.emit('mqtt-publish', { topic, payload, ...options })
+    if (socket?.connected) {
+      socket.emit('mqtt-publish', { topic, payload, ...options })
     }
   }
 
   const configureMqtt = (server: string, username?: string, password?: string) => {
-    if (socket.value?.connected) {
-      socket.value.emit('mqtt-configure', { server, username, password })
+    if (socket?.connected) {
+      socket.emit('mqtt-configure', { server, username, password })
     }
   }
 
   const disconnectFromBroker = () => {
-    if (socket.value) {
-      socket.value.disconnect()
-      socket.value = null
+    if (socket) {
+      socket.disconnect()
+      socket = null
       isConnected.value = false
-      activeSubscriptions.value = []
+      activeSubscriptions.length = 0
     }
   }
 
   onUnmounted(() => {
-    disconnectFromBroker()
+    // Only drop this component's handlers - the shared socket stays up
+    removeSubscriptions(instanceSubscriptions)
+    instanceSubscriptions.length = 0
   })
 
   return {
-    socket,
     isConnected,
+    brokerConnected,
+    authFailed,
+    statusColor,
     connectToBroker,
     reconnectToBroker,
     subscribeToTopic,
