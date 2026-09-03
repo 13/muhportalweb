@@ -77,6 +77,11 @@ jobs:
           tags: |
             type=ref,event=tag
             type=sha
+          # metadata-action moves `latest` onto any tag by default, so a
+          # throwaway or prerelease tag (v2.5.1-ci1) would claim it. Only
+          # tags without a hyphen get `latest`.
+          flavor: |
+            latest=${{ !contains(github.ref_name, '-') }}
 
       - name: Build and push image
         uses: docker/build-push-action@v6
